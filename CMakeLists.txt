@@ -24,6 +24,10 @@ add_library(msgf_core STATIC
     core/MsgfAlgorithm.cpp
     core/MsgfMetrics.h
     core/MsgfMetrics.cpp
+    core/MsgfBaselines.h
+    core/MsgfBaselines.cpp
+    core/BenchmarkTypes.h
+    core/BenchmarkExport.h
 )
 target_include_directories(msgf_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -39,7 +43,7 @@ target_link_libraries(msgf_cli PRIVATE msgf_core)
 
 # 3. Reusable Qt 6 Widget Module + Standalone Application
 if(MSGF_BUILD_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Concurrent Charts)
 
     add_library(msgf_widget STATIC
         ui/MsgfForm.ui
@@ -47,6 +51,9 @@ if(MSGF_BUILD_GUI)
         ui/MsgfForm.cpp
         ui/ImageCanvas.h
         ui/ImageCanvas.cpp
+        ui/DatasetBenchmarkWidget.h
+        ui/DatasetBenchmarkWidget.cpp
+        ui/NumericTableItem.h
     )
     set_target_properties(msgf_widget PROPERTIES
         AUTOMOC ON
@@ -62,6 +69,7 @@ if(MSGF_BUILD_GUI)
         Qt6::Gui
         Qt6::Widgets
         Qt6::Concurrent
+        Qt6::Charts
     )
 
     add_executable(MsgfTirApp
@@ -78,4 +86,13 @@ if(MSGF_BUILD_TESTS)
     )
     target_link_libraries(msgf_tests PRIVATE msgf_core)
     add_test(NAME msgf_unit_tests COMMAND msgf_tests)
+
+    if(MSGF_BUILD_GUI)
+        find_package(Qt6 REQUIRED COMPONENTS Test)
+        add_executable(msgf_ui_tests
+            tests/test_ui_benchmark.cpp
+        )
+        target_link_libraries(msgf_ui_tests PRIVATE msgf_widget Qt6::Test)
+        add_test(NAME msgf_ui_tests COMMAND msgf_ui_tests)
+    endif()
 endif()

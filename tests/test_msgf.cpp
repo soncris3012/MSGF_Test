@@ -1,4 +1,7 @@
+#include "core/BenchmarkExport.h"
+#include "core/BenchmarkTypes.h"
 #include "core/MsgfAlgorithm.h"
+#include "core/MsgfBaselines.h"
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
 
@@ -203,6 +206,79 @@ void testSampleImageSmokeIfAvailable()
     require(m.ie > m.inputStats.ie, "MSGF-TIR should increase IE on scene1");
 }
 
+void testBaselinesSummaryAndExport()
+{
+    cv::Mat sample(64, 64, CV_8UC1);
+    for (int r = 0; r < sample.rows; ++r) {
+        for (int c = 0; c < sample.cols; ++c) {
+            sample.at<unsigned char>(r, c) = static_cast<unsigned char>(60 + ((r * 3 + c * 5) % 120));
+        }
+    }
+
+    const MsgfParams params;
+    const std::vector<msgf::BenchmarkAlgorithmId> algos = {
+        msgf::BenchmarkAlgorithmId::Original,
+        msgf::BenchmarkAlgorithmId::HE,
+        msgf::BenchmarkAlgorithmId::GF_DDE,
+        msgf::BenchmarkAlgorithmId::BF_DDE,
+        msgf::BenchmarkAlgorithmId::MSGF_TIR
+    };
+
+    std::map<msgf::BenchmarkAlgorithmId, std::vector<msgf::ImageBenchmarkRow>> perAlgo;
+    const MsgfPlaneStats origStats = MsgfMetrics::evaluateSingle(sample);
+    for (int idx = 1; idx <= 2; ++idx) {
+        for (msgf::BenchmarkAlgorithmId id : algos) {
+            const auto res = msgf::MsgfBaselines::runAlgorithm(id, sample, params);
+            require(res.output8U.size() == sample.size() && res.output8U.type() == CV_8UC1,
+                    "baseline output type/size mismatch");
+            const MsgfMetricResult m = MsgfMetrics::evaluate(sample, res.output8U);
+
+            msgf::ImageBenchmarkRow row;
+            row.index = idx;
+            row.fileName = "img_" + std::to_string(idx) + ".png";
+            row.fullPath = "/tmp/" + row.fileName;
+            row.width = sample.cols;
+            row.height = sample.rows;
+            row.origIE = origStats.ie;
+            row.origAG = origStats.ag;
+            row.origPIQE = origStats.piqe;
+            row.psnr = m.psnr;
+            row.ie = m.ie;
+            row.ag = m.ag;
+            row.piqe = m.piqe;
+            row.runtimeMs = res.elapsedMs;
+            perAlgo[id].push_back(row);
+        }
+    }
+
+    const auto summaries = msgf::summarizeDatasetBenchmark(algos, perAlgo);
+    require(summaries.size() == algos.size(), "summary row count mismatch");
+
+    double winSum = 0.0;
+    for (const auto& s : summaries) {
+        if (s.algoId != msgf::BenchmarkAlgorithmId::Original) {
+            require(s.count == 2, "summary sample count mismatch");
+            require(s.winRatePct >= 0.0 && s.winRatePct <= 100.0, "winRate out of range");
+            winSum += s.winRatePct;
+        }
+    }
+    require(winSum >= 99.0, "at least one method must earn rank-1 wins");
+
+    const std::string sumCsv = msgf::exportSummaryToCsvUtf8Bom(summaries);
+    const std::string detCsv = msgf::exportDetailToCsvUtf8Bom(algos, perAlgo);
+    require(sumCsv.size() >= 3 && sumCsv[0] == '\xEF' && sumCsv[1] == '\xBB' && sumCsv[2] == '\xBF',
+            "summary CSV missing UTF-8 BOM");
+    require(detCsv.size() >= 3 && detCsv[0] == '\xEF' && detCsv[1] == '\xBB' && detCsv[2] == '\xBF',
+            "detail CSV missing UTF-8 BOM");
+
+    const std::string tex = msgf::exportSummaryToLatex(summaries);
+    require(tex.find("\\textbf{") != std::string::npos, "LaTeX export missing bold highlight");
+    require(tex.find("\\underline{") != std::string::npos, "LaTeX export missing underline 2nd-best");
+
+    const std::string md = msgf::exportSummaryToMarkdown(summaries);
+    require(md.find("**") != std::string::npos, "Markdown export missing bold highlight");
+}
+
 } // namespace
 
 int main()
@@ -214,6 +290,7 @@ int main()
         testMultiFormatAndTinyGeometries();
         testMetricsEq19To21AndPiqe();
         testSampleImageSmokeIfAvailable();
+        testBaselinesSummaryAndExport();
         std::cout << "All MSGF-TIR unit & invariant tests passed!\n";
         return 0;
     } catch (const std::exception& e) {

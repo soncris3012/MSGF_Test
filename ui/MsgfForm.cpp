@@ -1,6 +1,7 @@
 #include "ui/MsgfForm.h"
 #include "ui_MsgfForm.h"
 
+#include "ui/DatasetBenchmarkWidget.h"
 #include "ui/ImageCanvas.h"
 
 #include <QApplication>
@@ -260,6 +261,14 @@ void MsgfForm::setupConnections()
         connect(canvas, &ImageCanvas::viewChanged, this, &MsgfForm::onSyncViewChanged);
         connect(canvas, &ImageCanvas::viewReset, this, &MsgfForm::onSyncViewReset);
     }
+
+    // Two-way link: double-clicking an image row in Dataset Benchmark opens it in Compare
+    connect(ui->benchmarkWidget, &DatasetBenchmarkWidget::imageActivated,
+            this, [this](const QString& filePath) {
+                if (loadImageFile(filePath)) {
+                    ui->viewerTabs->setCurrentIndex(0);
+                }
+            });
 }
 
 std::vector<ImageCanvas*> MsgfForm::allCanvases() const
@@ -280,9 +289,11 @@ std::vector<ImageCanvas*> MsgfForm::allCanvases() const
 
 void MsgfForm::initializeSampleDirectory()
 {
+    ui->benchmarkWidget->setMsgfParams(currentParams());
     m_sampleDir = locateSampleDirectory();
     if (!m_sampleDir.isEmpty()) {
         loadFolderImages(m_sampleDir, true);
+        ui->benchmarkWidget->setDatasetDirectory(m_sampleDir);
     } else {
         updateNavigationButtons();
     }
@@ -413,6 +424,7 @@ void MsgfForm::setParams(const MsgfParams& p)
     ui->spinQ->setValue(p.q);
     m_isUpdatingControls = false;
 
+    ui->benchmarkWidget->setMsgfParams(p);
     scheduleProcessing(true);
 }
 
@@ -496,6 +508,9 @@ void MsgfForm::onOpenFolder()
     );
     if (!dirPath.isEmpty()) {
         loadFolderImages(dirPath, false);
+        if (!ui->benchmarkWidget->isRunning()) {
+            ui->benchmarkWidget->setDatasetDirectory(dirPath);
+        }
     }
 }
 
@@ -529,6 +544,7 @@ void MsgfForm::onParamEdited()
     if (m_isUpdatingControls) {
         return;
     }
+    ui->benchmarkWidget->setMsgfParams(currentParams());
     if (ui->chkAutoUpdate->isChecked()) {
         scheduleProcessing(false);
     }

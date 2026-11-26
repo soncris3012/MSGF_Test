@@ -66,11 +66,18 @@
   * Hoặc liên kết tĩnh target `msgf_widget` để nhúng trực tiếp `new MsgfForm(parent)` vào bất kỳ `QTabWidget` / `QMainWindow` nào khác.
   * Tách riêng hoàn toàn thư viện lõi `msgf_core` (thuần C++17 + OpenCV, **không phụ thuộc Qt**) dùng chung cho cả GUI, CLI và Unit Tests.
 * **Xử lý nền không treo UI**: Dùng `QtConcurrent::run` + `QFutureWatcher` kết hợp cơ chế `generation ID` và debounce `60 ms` — kéo `QSpinBox`/`QDoubleSpinBox` liên tục không làm đơ giao diện và tự loại bỏ khung cũ lỗi thời.
-* **3 Tab trực quan hóa với Zoom / Pan đồng bộ (`ImageCanvas`)**:
+* **4 Tab trực quan hóa & Benchmark toàn Dataset**:
   1. **Compare (Input vs Output)**: So sánh song song ảnh gốc (`input8U`) và ảnh tăng cường (`output8U`).
   2. **Decomposition (Figure 3)**: Lưới $2 \times 3$ hiển thị đồng thời `Original (I)`, `D1` (nhỏ), `D2` (vừa), `D3` (lớn) đã qua chuẩn hóa hiển thị `normalizeForDisplay`, lớp nền `B3` và lớp nền sau CLAHE `IB`.
   3. **Fused Details & Paper Ref**: Quan sát tổng chi tiết `ID_fused` và ảnh kết quả tham chiếu từ bài báo (`*_paper_ours.png`, nếu có).
-  * *Tương tác chuột*: Lăn chuột giữa để zoom tại tâm trỏ chuột, kéo chuột trái để pan, **nhấp đúp chuột trái** để reset fit-to-window trên toàn bộ các khung ảnh.
+  4. **Dataset Benchmark & Charts (`DatasetBenchmarkWidget`)**: Công cụ benchmark thực chiến cả thư mục dataset (FLIR / LLVIP / MSRS / `sample_images`):
+     * Chạy đa luồng không treo UI (`QtConcurrent::run` + `std::atomic<bool>` hủy ngang an toàn + cập nhật `QProgressBar` thời gian thực).
+     * So sánh đồng thời **Original**, **HE**, **GF&DDE**, **BF&DDE**, và **MSGF-TIR** (dùng tham số hiện tại đang tinh chỉnh ở cột trái).
+     * **Bảng 1 — Tổng hợp (`Mean ± Std` & `Win Rate (%)`)**: gắn mũi tên hướng tối ưu (`PSNR ↑`, `IE ↑`, `AG ↑`, `PIQE ↓`, `Time ↓`), tô màu xanh lá cho ô tốt nhất và xanh dương gạch chân cho ô đứng nhì.
+     * **Bảng 2 — Chi tiết từng ảnh**: hiển thị đầy đủ `PSNR`, `IE gốc/out`, `ΔIE`, `AG gốc/out`, `ΔAG`, `PIQE`, `ΔPIQE`, `Time (ms)` với `NumericTableItem` sắp xếp đúng theo giá trị số thực, ô tìm kiếm & lọc (`ΔIE > 0`, `ΔIE < 0`, `ΔAG > 0`, `ΔPIQE < 0`), và **double-click dòng bất kỳ để mở thẳng ảnh lên Tab Compare & Decomposition**.
+     * **3 Biểu đồ động (`Qt6::Charts`)**: *Grouped Bar Chart* (có nhãn giá trị trên đỉnh cột), *Per-Image Trend* (`QLineSeries`), và *Speed vs Quality Trade-off* (`QScatterSeries`), kèm nút **Lưu ảnh PNG**.
+     * **Xuất báo cáo nhanh**: **Xuất CSV chuẩn UTF-8 BOM** (`dataset_summary.csv` & `dataset_detail.csv` mở thẳng Excel không lỗi font tiếng Việt), **Copy LaTeX** (`\textbf{}` / `\underline{}`), và **Copy Markdown**.
+  * *Tương tác chuột trên Canvas*: Lăn chuột giữa để zoom tại tâm trỏ chuột, kéo chuột trái để pan, **nhấp đúp chuột trái** để reset fit-to-window trên toàn bộ các khung ảnh.
 * **Hỗ trợ đa định dạng & điều hướng nhanh**: Hỗ trợ 8-bit, 16-bit (`CV_16U`), BGR/BGRA, ảnh float (`CV_32F`/`CV_64F`); nạp file đơn lẻ, mở cả thư mục, điều hướng nhanh bằng nút `◀` / `▶` hoặc phím mũi tên **Left / Right**, xuất ảnh đơn (`Save Output...`) hoặc toàn bộ 10 tầng trung gian (`Export All Layers...`).
 * **Đánh giá định lượng thời gian thực & đối chiếu Table 1**: Hiển thị **PSNR**, **IE** (`input -> output`), **AG** (`input -> output`), **PIQE** (`input -> output`, chuẩn Venkatanath 2015), Runtime (`ms`) và bảng đối chiếu **Table 1** (12 dòng: Scene 1–3 × HE, GF&DDE, BF&DDE, MSGF-TIR Ours).
 
@@ -87,17 +94,23 @@ MSGF_Test/
 ├── run_gui.sh                  # Script tự động cấu hình, biên dịch Release và khởi chạy MsgfTirApp
 ├── main.cpp                    # Entry point độc lập bọc MsgfForm trong QMainWindow
 ├── core/
-│   ├── MsgfParams.h            # Cấu trúc MsgfParams, MsgfOutputs và dữ liệu tham chiếu Table 1
-│   ├── MsgfAlgorithm.h/.cpp    # Thuần C++17 & OpenCV: 3-scale Self-GF, CLAHE, Dynamic Linear, Fusion
-│   └── MsgfMetrics.h/.cpp      # Đo PSNR, IE, AG (Eq. 19–21) và PIQE (Venkatanath 2015)
+│   ├── MsgfParams.h              # Cấu trúc MsgfParams, MsgfOutputs và dữ liệu tham chiếu Table 1
+│   ├── MsgfAlgorithm.h/.cpp      # Thuần C++17 & OpenCV: 3-scale Self-GF, CLAHE, Dynamic Linear, Fusion
+│   ├── MsgfMetrics.h/.cpp        # Đo PSNR, IE, AG (Eq. 19–21) và PIQE (Venkatanath 2015)
+│   ├── MsgfBaselines.h/.cpp      # Thuật toán đối chứng Table 1: HE, GF&DDE, BF&DDE
+│   ├── BenchmarkTypes.h          # Cấu trúc ImageBenchmarkRow, AlgoSummaryRow, Mean ± Std & Win Rate
+│   └── BenchmarkExport.h         # Xuất CSV (UTF-8 BOM), bảng LaTeX (\textbf/\underline) & Markdown
 ├── ui/
-│   ├── MsgfForm.ui             # File giao diện Qt Designer (QSplitter 3 cột, QScrollArea, QTabWidget, Table 1)
-│   ├── MsgfForm.h/.cpp         # Signal/Slot, background QtConcurrent worker, export & đồng bộ view
-│   └── ImageCanvas.h/.cpp      # Custom QWidget hiển thị ảnh zoom/pan/double-click reset
+│   ├── MsgfForm.ui               # File giao diện Qt Designer (QSplitter 3 cột, 4 tab, Table 1)
+│   ├── MsgfForm.h/.cpp           # Signal/Slot, background QtConcurrent worker, export & đồng bộ view
+│   ├── DatasetBenchmarkWidget.h/.cpp # Tab Dataset Benchmark & 3 biểu đồ động Qt6::Charts
+│   ├── NumericTableItem.h        # QTableWidgetItem sắp xếp chuẩn theo số thực (Qt::UserRole)
+│   └── ImageCanvas.h/.cpp        # Custom QWidget hiển thị ảnh zoom/pan/double-click reset
 ├── cli/
-│   └── msgf_cli.cpp            # Công cụ dòng lệnh (CLI) benchmark batch & xuất CSV / từng tầng trung gian
+│   └── msgf_cli.cpp              # Công cụ dòng lệnh (CLI) benchmark batch & xuất CSV / từng tầng trung gian
 ├── tests/
-│   └── test_msgf.cpp           # Unit test kiểm tra bất biến toán học (CTest)
+│   ├── test_msgf.cpp             # Unit test thuật toán, độ đo, baselines & export (CTest)
+│   └── test_ui_benchmark.cpp     # Integration test offscreen cho NumericTableItem, QtCharts & Benchmark tab
 ├── docs/
 │   └── ALGORITHM_SPEC.md       # Tài liệu đặc tả toán học chi tiết Eq. (1)–(21)
 ├── sample_images/              # 3 cảnh mẫu & Figure 3 tách sạch từ PDF bài báo (Scene 1–3)
@@ -112,7 +125,7 @@ MSGF_Test/
 * Trình biên dịch hỗ trợ **C++17** (Clang, GCC hoặc MSVC).
 * **CMake** $\ge 3.20$.
 * **OpenCV** $\ge 4.x$ (hoặc $5.x$) với các module `core`, `imgproc`, `imgcodecs` (không cần `opencv_contrib`).
-* **Qt 6** (`Core`, `Gui`, `Widgets`, `Concurrent`) — có thể tắt bằng `-DMSGF_BUILD_GUI=OFF` nếu chỉ cần build core + CLI.
+* **Qt 6** (`Core`, `Gui`, `Widgets`, `Concurrent`, `Charts`; thêm `Test` nếu build `MSGF_BUILD_TESTS=ON`) — có thể tắt GUI bằng `-DMSGF_BUILD_GUI=OFF` nếu chỉ cần build core + CLI.
 
 ### Biên dịch và chạy nhanh trên macOS (Homebrew Qt 6 & OpenCV)
 

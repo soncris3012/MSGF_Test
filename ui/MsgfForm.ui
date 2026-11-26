@@ -798,6 +798,31 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabBenchmark">
+       <attribute name="title">
+        <string>Dataset Benchmark &amp; Charts</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="benchmarkTabLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="DatasetBenchmarkWidget" name="benchmarkWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
      <widget class="QWidget" name="rightPanel" native="true">
       <property name="minimumSize">
@@ -990,6 +1015,12 @@
    <class>ImageCanvas</class>
    <extends>QWidget</extends>
    <header>ui/ImageCanvas.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DatasetBenchmarkWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/DatasetBenchmarkWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
