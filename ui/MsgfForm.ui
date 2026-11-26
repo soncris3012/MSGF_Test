@@ -1,0 +1,998 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MsgfForm</class>
+ <widget class="QWidget" name="MsgfForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1480</width>
+    <height>880</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1024</width>
+    <height>660</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MSGF-TIR: Multi-Scale Guided Filtering Thermal Enhancement</string>
+  </property>
+  <layout class="QVBoxLayout" name="rootLayout">
+   <property name="spacing">
+    <number>8</number>
+   </property>
+   <property name="leftMargin">
+    <number>8</number>
+   </property>
+   <property name="topMargin">
+    <number>8</number>
+   </property>
+   <property name="rightMargin">
+    <number>8</number>
+   </property>
+   <property name="bottomMargin">
+    <number>8</number>
+   </property>
+   <item>
+    <widget class="QSplitter" name="mainSplitter">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QWidget" name="leftPanel" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>310</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>420</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="leftLayout">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGroupBox" name="grpInput">
+         <property name="title">
+          <string>Input &amp; Dataset Navigator</string>
+         </property>
+         <layout class="QVBoxLayout" name="inputLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="fileButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="btnLoadImage">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Load Image...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnOpenFolder">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Open Folder...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="navLayout">
+            <item>
+             <widget class="QPushButton" name="btnPrev">
+              <property name="maximumWidth">
+               <number>34</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Previous image (Left Arrow)</string>
+              </property>
+              <property name="text">
+               <string>◀</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboScene">
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnNext">
+              <property name="maximumWidth">
+               <number>34</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Next image (Right Arrow)</string>
+              </property>
+              <property name="text">
+               <string>▶</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="paramScroll">
+         <property name="frameShape">
+          <enum>QFrame::Shape::NoFrame</enum>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="paramScrollContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>330</width>
+            <height>560</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="paramLayout">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QGroupBox" name="grpGuidedFilter">
+             <property name="title">
+              <string>1. Multi-Scale Self-Guided Filter (3 Scales)</string>
+             </property>
+             <layout class="QGridLayout" name="gfGridLayout">
+              <property name="horizontalSpacing">
+               <number>8</number>
+              </property>
+              <property name="verticalSpacing">
+               <number>6</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblScaleHeader">
+                <property name="text">
+                 <string>Scale</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="lblRadiusHeader">
+                <property name="text">
+                 <string>Radius r</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="lblEpsHeader">
+                <property name="toolTip">
+                 <string>Regularization eps on normalized [0, 1] domain</string>
+                </property>
+                <property name="text">
+                 <string>Eps ε ([0,1])</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblScale1">
+                <property name="text">
+                 <string>Tầng 1 (D1):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="spinR1">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>128</number>
+                </property>
+                <property name="value">
+                 <number>2</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QDoubleSpinBox" name="spinEps1">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.000500000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.005000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="lblScale2">
+                <property name="text">
+                 <string>Tầng 2 (D2):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSpinBox" name="spinR2">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>128</number>
+                </property>
+                <property name="value">
+                 <number>6</number>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QDoubleSpinBox" name="spinEps2">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.001000000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.020000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="lblScale3">
+                <property name="text">
+                 <string>Tầng 3 (D3):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QSpinBox" name="spinR3">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>128</number>
+                </property>
+                <property name="value">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QDoubleSpinBox" name="spinEps3">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.005000000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.080000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpClahe">
+             <property name="title">
+              <string>2. Base Layer CLAHE (B3 → IB)</string>
+             </property>
+             <layout class="QFormLayout" name="claheFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblClipLimit">
+                <property name="text">
+                 <string>Clip Limit (c):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="spinClipLimit">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.100000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>40.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.200000000000000</double>
+                </property>
+                <property name="value">
+                 <double>2.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblTileGrid">
+                <property name="text">
+                 <string>Tile Grid (n × n):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="spinTileGrid">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>64</number>
+                </property>
+                <property name="value">
+                 <number>8</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpDynamicLinear">
+             <property name="title">
+              <string>3. Dynamic Linear Enhancement (Eq. 17)</string>
+             </property>
+             <layout class="QFormLayout" name="dynFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblAlpha1">
+                <property name="text">
+                 <string>α1 (Small D1):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="spinAlpha1">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.500000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblAlpha2">
+                <property name="text">
+                 <string>α2 (Medium D2):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="spinAlpha2">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.500000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="lblAlpha3">
+                <property name="text">
+                 <string>α3 (Large D3):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QDoubleSpinBox" name="spinAlpha3">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.500000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpFusion">
+             <property name="title">
+              <string>4. Weighted Fusion (I = p·IB + q·ID)</string>
+             </property>
+             <layout class="QGridLayout" name="fusionGridLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblW1">
+                <property name="text">
+                 <string>w1:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="spinW1">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="maximum">
+                 <double>5.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="lblP">
+                <property name="text">
+                 <string>p (Base):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QDoubleSpinBox" name="spinP">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="maximum">
+                 <double>5.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblW2">
+                <property name="text">
+                 <string>w2:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="spinW2">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="maximum">
+                 <double>5.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QLabel" name="lblQ">
+                <property name="text">
+                 <string>q (Detail):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QDoubleSpinBox" name="spinQ">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="maximum">
+                 <double>5.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="lblW3">
+                <property name="text">
+                 <string>w3:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QDoubleSpinBox" name="spinW3">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="maximum">
+                 <double>5.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <spacer name="paramSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>10</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="grpActions">
+         <property name="title">
+          <string>Actions</string>
+         </property>
+         <layout class="QVBoxLayout" name="actionsLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="runAutoLayout">
+            <item>
+             <widget class="QPushButton" name="btnRun">
+              <property name="minimumHeight">
+               <number>30</number>
+              </property>
+              <property name="text">
+               <string>Run</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkAutoUpdate">
+              <property name="text">
+               <string>Auto-Update</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnReset">
+              <property name="minimumHeight">
+               <number>30</number>
+              </property>
+              <property name="text">
+               <string>Reset Default</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="exportLayout">
+            <item>
+             <widget class="QPushButton" name="btnSaveOutput">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Save Output...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnExportStages">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Export All Layers...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QTabWidget" name="viewerTabs">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tabCompare">
+       <attribute name="title">
+        <string>Compare (Input vs Output)</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="compareLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <item>
+         <widget class="ImageCanvas" name="canvasInput" native="true"/>
+        </item>
+        <item>
+         <widget class="ImageCanvas" name="canvasOutput" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabDecomposition">
+       <attribute name="title">
+        <string>Decomposition (Figure 3)</string>
+       </attribute>
+       <layout class="QGridLayout" name="decompGridLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="ImageCanvas" name="canvasDecompOrig" native="true"/>
+        </item>
+        <item row="0" column="1">
+         <widget class="ImageCanvas" name="canvasDecompD1" native="true"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="ImageCanvas" name="canvasDecompD2" native="true"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="ImageCanvas" name="canvasDecompD3" native="true"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="ImageCanvas" name="canvasDecompB3" native="true"/>
+        </item>
+        <item row="1" column="2">
+         <widget class="ImageCanvas" name="canvasDecompIB" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabDetailsRef">
+       <attribute name="title">
+        <string>Fused Details &amp; Paper Ref</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="detailsRefLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <item>
+         <widget class="ImageCanvas" name="canvasIDFused" native="true"/>
+        </item>
+        <item>
+         <widget class="ImageCanvas" name="canvasPaperRef" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="rightPanel" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>290</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>430</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="rightLayout">
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGroupBox" name="grpMetrics">
+         <property name="title">
+          <string>Quantitative Metrics (Current Run)</string>
+         </property>
+         <layout class="QFormLayout" name="metricsFormLayout">
+          <property name="verticalSpacing">
+           <number>8</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="lblInfoKey">
+            <property name="text">
+             <string>Image:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="lblImageInfo">
+            <property name="text">
+             <string>—</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lblPsnrKey">
+            <property name="text">
+             <string>PSNR (Eq. 19):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="lblPsnrVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lblIeKey">
+            <property name="text">
+             <string>IE (Eq. 20):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="lblIeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="lblAgKey">
+            <property name="text">
+             <string>AG (Eq. 21):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="lblAgVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="lblPiqeKey">
+            <property name="text">
+             <string>PIQE (↓ better):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLabel" name="lblPiqeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="lblRuntimeKey">
+            <property name="text">
+             <string>Runtime:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="lblRuntimeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="lblStatusKey">
+            <property name="text">
+             <string>Status:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLabel" name="lblStatusVal">
+            <property name="text">
+             <string>Idle</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="grpBenchmark">
+         <property name="title">
+          <string>Paper Benchmark — Table 1 (Fire 2024, 7, 192)</string>
+         </property>
+         <layout class="QVBoxLayout" name="benchLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <widget class="QTableWidget" name="tblBenchmark">
+            <property name="editTriggers">
+             <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+            </property>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblBenchHint">
+            <property name="text">
+             <string>Tip: Scroll wheel zooms at cursor, drag pans, double-click resets view.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageCanvas</class>
+   <extends>QWidget</extends>
+   <header>ui/ImageCanvas.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

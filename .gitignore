@@ -1,0 +1,21 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+.cmake/
+CMakeUserPresets.json
+
+# IDEs & OS
+.idea/
+.vscode/
+.qtcreator/
+*.swp
+*.user
+.DS_Store
+
+# Generated outputs
+results/*
+!results/.gitkeep
+*.png.out
+*.csv
+!docs/*.csv
