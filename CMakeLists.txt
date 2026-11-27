@@ -26,6 +26,8 @@ add_library(msgf_core STATIC
     core/MsgfMetrics.cpp
     core/MsgfBaselines.h
     core/MsgfBaselines.cpp
+    core/DatasetManager.h
+    core/DatasetManager.cpp
     core/BenchmarkTypes.h
     core/BenchmarkExport.h
 )

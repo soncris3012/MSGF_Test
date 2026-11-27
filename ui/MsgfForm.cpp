@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QSettings>
 #include <QSignalBlocker>
 #include <QTableWidgetItem>
 #include <QtConcurrent/QtConcurrentRun>
@@ -227,6 +228,9 @@ void MsgfForm::setupConnections()
 {
     connect(ui->btnLoadImage, &QPushButton::clicked, this, &MsgfForm::onLoadImage);
     connect(ui->btnOpenFolder, &QPushButton::clicked, this, &MsgfForm::onOpenFolder);
+    connect(ui->btnSetRoot, &QPushButton::clicked, this, &MsgfForm::onSetDatasetRoot);
+    connect(ui->comboDataset, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MsgfForm::onDatasetSelected);
     connect(ui->comboScene, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MsgfForm::onSceneSelected);
     connect(ui->btnPrev, &QPushButton::clicked, this, &MsgfForm::onPrevImage);
@@ -291,8 +295,42 @@ void MsgfForm::initializeSampleDirectory()
 {
     ui->benchmarkWidget->setMsgfParams(currentParams());
     m_sampleDir = locateSampleDirectory();
-    if (!m_sampleDir.isEmpty()) {
-        loadFolderImages(m_sampleDir, true);
+
+    const QSettings settings(QStringLiteral("MSGF_Test"), QStringLiteral("MSGF-TIR"));
+    const QString savedRoot = settings.value(QStringLiteral("datasetRoot")).toString();
+    refreshDatasets(savedRoot);
+}
+
+void MsgfForm::refreshDatasets(const QString& rootOverride)
+{
+    const std::string detected = msgf::DatasetManager::detectDatasetRoot(rootOverride.toStdString());
+    m_datasetRoot = QString::fromStdString(detected);
+    m_datasets = msgf::DatasetManager::discoverDatasets(
+        detected,
+        m_sampleDir.toStdString()
+    );
+
+    {
+        const QSignalBlocker blocker(ui->comboDataset);
+        ui->comboDataset->clear();
+        for (const auto& ds : m_datasets) {
+            ui->comboDataset->addItem(
+                QString::fromStdString(ds.displayName),
+                QString::fromStdString(ds.folderPath)
+            );
+        }
+    }
+
+    ui->benchmarkWidget->setAvailableDatasets(m_datasets, m_datasetRoot);
+
+    if (!m_datasets.empty()) {
+        const QSignalBlocker blocker(ui->comboDataset);
+        ui->comboDataset->setCurrentIndex(0);
+        const QString firstPath = QString::fromStdString(m_datasets[0].folderPath);
+        loadFolderImages(firstPath);
+        ui->benchmarkWidget->setDatasetDirectory(firstPath);
+    } else if (!m_sampleDir.isEmpty()) {
+        loadFolderImages(m_sampleDir);
         ui->benchmarkWidget->setDatasetDirectory(m_sampleDir);
     } else {
         updateNavigationButtons();
@@ -317,34 +355,44 @@ QString MsgfForm::locateSampleDirectory()
     return {};
 }
 
-void MsgfForm::loadFolderImages(const QString& dirPath, bool isSampleDir)
+void MsgfForm::loadFolderImages(const QString& dirPath)
 {
     const QDir dir(dirPath);
     if (!dir.exists()) {
         return;
     }
 
-    const QStringList filters = {
-        QStringLiteral("*.png"), QStringLiteral("*.jpg"), QStringLiteral("*.jpeg"),
-        QStringLiteral("*.bmp"), QStringLiteral("*.tif"), QStringLiteral("*.tiff")
-    };
-    const QFileInfoList infos = dir.entryInfoList(filters, QDir::Files, QDir::Name);
+    const std::vector<std::string> scanned = msgf::DatasetManager::scanThermalImages(dirPath.toStdString());
+    if (scanned.empty()) {
+        QMessageBox::information(
+            this,
+            QStringLiteral("Open Folder"),
+            QStringLiteral("Không tìm thấy ảnh nhiệt hợp lệ trong thư mục:\n%1").arg(dirPath)
+        );
+        return;
+    }
+
+    const QString canonicalRoot = dir.canonicalPath();
+    const QDir rootDir(canonicalRoot);
 
     m_imageFiles.clear();
+    m_imageFiles.reserve(scanned.size());
+
+    ui->comboScene->setUpdatesEnabled(false);
     {
         const QSignalBlocker blocker(ui->comboScene);
         ui->comboScene->clear();
 
-        for (const QFileInfo& fi : infos) {
+        for (const std::string& stdPath : scanned) {
+            const QString qPath = QString::fromStdString(stdPath);
+            const QFileInfo fi(qPath);
             const QString fname = fi.fileName();
-            if (isSampleDir) {
-                // Show only the 3 original paper test scenes in the quick scene selector
-                if (!fname.endsWith(QStringLiteral("_original.png"))) {
-                    continue;
-                }
+            m_imageFiles.push_back(qPath);
+
+            QString displayName = rootDir.relativeFilePath(qPath);
+            if (displayName.startsWith(QStringLiteral("../"))) {
+                displayName = fname;
             }
-            m_imageFiles.push_back(fi.absoluteFilePath());
-            QString displayName = fname;
             if (fname == QStringLiteral("scene1_original.png")) {
                 displayName = QStringLiteral("Scene 1 (iRay T3-Pro)");
             } else if (fname == QStringLiteral("scene2_original.png")) {
@@ -352,9 +400,10 @@ void MsgfForm::loadFolderImages(const QString& dirPath, bool isSampleDir)
             } else if (fname == QStringLiteral("scene3_original.png")) {
                 displayName = QStringLiteral("Scene 3 (FLIR Pedestrian)");
             }
-            ui->comboScene->addItem(displayName, fi.absoluteFilePath());
+            ui->comboScene->addItem(displayName, qPath);
         }
     }
+    ui->comboScene->setUpdatesEnabled(true);
 
     m_currentFileIndex = m_imageFiles.empty() ? -1 : 0;
     updateNavigationButtons();
@@ -500,16 +549,49 @@ void MsgfForm::onLoadImage()
 
 void MsgfForm::onOpenFolder()
 {
-    const QString startDir = m_sampleDir.isEmpty() ? QDir::homePath() : m_sampleDir;
+    const QString startDir = !m_datasetRoot.isEmpty()
+                                 ? m_datasetRoot
+                                 : (m_sampleDir.isEmpty() ? QDir::homePath() : m_sampleDir);
     const QString dirPath = QFileDialog::getExistingDirectory(
         this,
-        QStringLiteral("Select Folder of Thermal Images"),
+        QStringLiteral("Select Folder of Thermal Images (or QART_Datasets subfolder)"),
         startDir
     );
     if (!dirPath.isEmpty()) {
-        loadFolderImages(dirPath, false);
+        loadFolderImages(dirPath);
         if (!ui->benchmarkWidget->isRunning()) {
             ui->benchmarkWidget->setDatasetDirectory(dirPath);
+        }
+    }
+}
+
+void MsgfForm::onSetDatasetRoot()
+{
+    const QString startDir = !m_datasetRoot.isEmpty() ? m_datasetRoot : QDir::homePath();
+    const QString dirPath = QFileDialog::getExistingDirectory(
+        this,
+        QStringLiteral("Select Dataset Root Folder (e.g. QART_Datasets)"),
+        startDir
+    );
+    if (dirPath.isEmpty()) {
+        return;
+    }
+
+    QSettings settings(QStringLiteral("MSGF_Test"), QStringLiteral("MSGF-TIR"));
+    settings.setValue(QStringLiteral("datasetRoot"), dirPath);
+    refreshDatasets(dirPath);
+}
+
+void MsgfForm::onDatasetSelected(int index)
+{
+    if (index < 0 || index >= ui->comboDataset->count()) {
+        return;
+    }
+    const QString folderPath = ui->comboDataset->itemData(index).toString();
+    if (!folderPath.isEmpty()) {
+        loadFolderImages(folderPath);
+        if (!ui->benchmarkWidget->isRunning()) {
+            ui->benchmarkWidget->setDatasetDirectory(folderPath);
         }
     }
 }

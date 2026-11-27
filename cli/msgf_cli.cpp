@@ -1,3 +1,4 @@
+#include "core/DatasetManager.h"
 #include "core/MsgfAlgorithm.h"
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
@@ -24,6 +25,7 @@ void printUsage(const char* prog)
               << "  --output-dir <dir>   Save enhanced PNGs (and optional layers) to directory\n"
               << "  --save-layers        Also export B3, D1..D3, IB_clahe, ID_fused per image\n"
               << "  --csv <file>         Write CSV metrics report\n"
+              << "  --max <N>            Limit to N evenly-strided images (0 = all)\n"
               << "  --all                Include *_paper_ours and fig3_* files when scanning dir\n"
               << "  --r1 <int>           Scale 1 radius (default 2)\n"
               << "  --r2 <int>           Scale 2 radius (default 6)\n"
@@ -61,6 +63,7 @@ int main(int argc, char* argv[])
     fs::path csvPath;
     bool saveLayers = false;
     bool includeAll = false;
+    int maxImages = 0;
     MsgfParams params;
 
     for (int i = 1; i < argc; ++i) {
@@ -84,6 +87,8 @@ int main(int argc, char* argv[])
             csvPath = needVal("--csv");
         } else if (arg == "--save-layers") {
             saveLayers = true;
+        } else if (arg == "--max") {
+            maxImages = std::stoi(needVal("--max"));
         } else if (arg == "--all") {
             includeAll = true;
         } else if (arg == "--r1") {
@@ -129,18 +134,23 @@ int main(int argc, char* argv[])
     if (fs::is_regular_file(inputPath, ec)) {
         files.push_back(inputPath);
     } else if (fs::is_directory(inputPath, ec)) {
-        for (const auto& entry : fs::directory_iterator(inputPath, ec)) {
-            if (!entry.is_regular_file(ec) || !isImageExt(entry.path())) {
-                continue;
+        if (includeAll) {
+            for (const auto& entry : fs::directory_iterator(inputPath, ec)) {
+                if (entry.is_regular_file(ec) && isImageExt(entry.path())) {
+                    files.push_back(entry.path());
+                }
             }
-            const std::string fname = entry.path().filename().string();
-            if (!includeAll && (fname.find("_paper_ours") != std::string::npos
-                                || fname.rfind("fig3_", 0) == 0)) {
-                continue;
+            std::sort(files.begin(), files.end());
+            if (maxImages > 0 && static_cast<int>(files.size()) > maxImages) {
+                files.resize(static_cast<std::size_t>(maxImages));
             }
-            files.push_back(entry.path());
+        } else {
+            const auto scanned = msgf::DatasetManager::scanThermalImages(inputPath.string(), maxImages);
+            files.reserve(scanned.size());
+            for (const std::string& p : scanned) {
+                files.emplace_back(p);
+            }
         }
-        std::sort(files.begin(), files.end());
     } else {
         std::cerr << "Input path does not exist: " << inputPath << '\n';
         return 1;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DatasetManager.h"
 #include "core/MsgfAlgorithm.h"
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
@@ -50,6 +51,8 @@ protected:
 private slots:
     void onLoadImage();
     void onOpenFolder();
+    void onSetDatasetRoot();
+    void onDatasetSelected(int index);
     void onSceneSelected(int index);
     void onPrevImage();
     void onNextImage();
@@ -75,7 +78,8 @@ private:
     void applyTheme();
     void populateBenchmarkTable();
     void initializeSampleDirectory();
-    void loadFolderImages(const QString& dirPath, bool isSampleDir);
+    void refreshDatasets(const QString& rootOverride = {});
+    void loadFolderImages(const QString& dirPath);
     void updateNavigationButtons();
     void scheduleProcessing(bool immediate = false);
     void startBackgroundRun();
@@ -89,6 +93,8 @@ private:
     std::unique_ptr<Ui::MsgfForm> ui;
 
     QString m_sampleDir;
+    QString m_datasetRoot;
+    std::vector<msgf::DatasetEntry> m_datasets;
     std::vector<QString> m_imageFiles;
     int m_currentFileIndex = -1;
     QString m_currentLabel;

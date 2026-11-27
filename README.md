@@ -78,6 +78,10 @@
      * **3 Biểu đồ động (`Qt6::Charts`)**: *Grouped Bar Chart* (có nhãn giá trị trên đỉnh cột), *Per-Image Trend* (`QLineSeries`), và *Speed vs Quality Trade-off* (`QScatterSeries`), kèm nút **Lưu ảnh PNG**.
      * **Xuất báo cáo nhanh**: **Xuất CSV chuẩn UTF-8 BOM** (`dataset_summary.csv` & `dataset_detail.csv` mở thẳng Excel không lỗi font tiếng Việt), **Copy LaTeX** (`\textbf{}` / `\underline{}`), và **Copy Markdown**.
   * *Tương tác chuột trên Canvas*: Lăn chuột giữa để zoom tại tâm trỏ chuột, kéo chuột trái để pan, **nhấp đúp chuột trái** để reset fit-to-window trên toàn bộ các khung ảnh.
+* **Tự động nhận diện `QART_Datasets` & quét thư mục lồng thông minh (`DatasetManager`)**:
+  * Tự động dò tìm `$IR_DATASET_DIR`, `$QART_DATASETS_DIR`, `~/QART_Datasets/raw`, `~/QART_Datasets` (và lưu thư mục gốc người dùng chọn bằng `Root...` qua `QSettings`).
+  * Liệt kê sẵn trong Dropdown các tập ảnh nhiệt: `Paper Samples`, `FLIR (Thermal Val / Train / Video)`, `LLVIP (Test / Train IR)`, `MSRS (Test / Train / Detection IR)`, `RoadScene (IR / Crop IR)`.
+  * Khi mở bất kỳ thư mục cha nào (`QART_Datasets`, `raw`, `llvip/infrared`, `flir`, `msrs`, `roadscene`), bộ quét đệ quy tự gom toàn bộ ảnh nhiệt và **bỏ qua các thư mục RGB/visible/labels/archives** (`visible/`, `vi/`, `images_rgb_*`, `Segmentation_labels/`, `analyticsData/`), hỗ trợ lấy mẫu đều (`Giới hạn` / `--max N`).
 * **Hỗ trợ đa định dạng & điều hướng nhanh**: Hỗ trợ 8-bit, 16-bit (`CV_16U`), BGR/BGRA, ảnh float (`CV_32F`/`CV_64F`); nạp file đơn lẻ, mở cả thư mục, điều hướng nhanh bằng nút `◀` / `▶` hoặc phím mũi tên **Left / Right**, xuất ảnh đơn (`Save Output...`) hoặc toàn bộ 10 tầng trung gian (`Export All Layers...`).
 * **Đánh giá định lượng thời gian thực & đối chiếu Table 1**: Hiển thị **PSNR**, **IE** (`input -> output`), **AG** (`input -> output`), **PIQE** (`input -> output`, chuẩn Venkatanath 2015), Runtime (`ms`) và bảng đối chiếu **Table 1** (12 dòng: Scene 1–3 × HE, GF&DDE, BF&DDE, MSGF-TIR Ours).
 
@@ -98,6 +102,7 @@ MSGF_Test/
 │   ├── MsgfAlgorithm.h/.cpp      # Thuần C++17 & OpenCV: 3-scale Self-GF, CLAHE, Dynamic Linear, Fusion
 │   ├── MsgfMetrics.h/.cpp        # Đo PSNR, IE, AG (Eq. 19–21) và PIQE (Venkatanath 2015)
 │   ├── MsgfBaselines.h/.cpp      # Thuật toán đối chứng Table 1: HE, GF&DDE, BF&DDE
+│   ├── DatasetManager.h/.cpp     # Tự động dò QART_Datasets & quét đệ quy ảnh nhiệt (bỏ RGB/labels)
 │   ├── BenchmarkTypes.h          # Cấu trúc ImageBenchmarkRow, AlgoSummaryRow, Mean ± Std & Win Rate
 │   └── BenchmarkExport.h         # Xuất CSV (UTF-8 BOM), bảng LaTeX (\textbf/\underline) & Markdown
 ├── ui/

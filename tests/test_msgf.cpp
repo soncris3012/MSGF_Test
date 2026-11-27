@@ -1,5 +1,6 @@
 #include "core/BenchmarkExport.h"
 #include "core/BenchmarkTypes.h"
+#include "core/DatasetManager.h"
 #include "core/MsgfAlgorithm.h"
 #include "core/MsgfBaselines.h"
 #include "core/MsgfMetrics.h"
@@ -279,6 +280,66 @@ void testBaselinesSummaryAndExport()
     require(md.find("**") != std::string::npos, "Markdown export missing bold highlight");
 }
 
+void testDatasetManagerLayout()
+{
+    namespace fs = std::filesystem;
+    const fs::path tmpRoot = fs::temp_directory_path() / "msgf_test_qart_layout";
+    std::error_code ec;
+    fs::remove_all(tmpRoot, ec);
+
+    const fs::path rawDir = tmpRoot / "raw";
+    const fs::path thermalDirs[] = {
+        rawDir / "flir" / "images_thermal_val" / "data",
+        rawDir / "llvip" / "infrared" / "test",
+        rawDir / "llvip" / "infrared" / "train",
+        rawDir / "msrs" / "test" / "ir",
+        rawDir / "roadscene" / "infrared"
+    };
+    const fs::path skipDirs[] = {
+        rawDir / "flir" / "images_rgb_val" / "data",
+        rawDir / "llvip" / "visible" / "test",
+        rawDir / "msrs" / "test" / "vi",
+        rawDir / "msrs" / "test" / "Segmentation_labels",
+        rawDir / "roadscene" / "crop_HR_visible",
+        tmpRoot / "archives"
+    };
+
+    cv::Mat tiny(8, 8, CV_8UC1, cv::Scalar(120));
+    for (const auto& d : thermalDirs) {
+        fs::create_directories(d);
+        cv::imwrite((d / "ir_01.png").string(), tiny);
+        cv::imwrite((d / "ir_02.png").string(), tiny);
+    }
+    for (const auto& d : skipDirs) {
+        fs::create_directories(d);
+        cv::imwrite((d / "rgb_01.png").string(), tiny);
+    }
+
+    const std::string detected = msgf::DatasetManager::detectDatasetRoot(tmpRoot.string());
+    require(!detected.empty(), "detectDatasetRoot failed for temp QART layout");
+
+    const auto datasets = msgf::DatasetManager::discoverDatasets(detected, "");
+    require(datasets.size() == 5, "discoverDatasets expected 5 thermal subsets");
+
+    // Scanning parent QART_Datasets, raw/llvip/infrared, raw/msrs, raw/roadscene must skip RGB/labels
+    const auto allThermal = msgf::DatasetManager::scanThermalImages(tmpRoot.string());
+    require(allThermal.size() == 10, "scanThermalImages on QART root should find exactly 10 IR images");
+
+    const auto llvipIr = msgf::DatasetManager::scanThermalImages((rawDir / "llvip" / "infrared").string());
+    require(llvipIr.size() == 4, "scanThermalImages on llvip/infrared should find test+train (4 imgs)");
+
+    const auto msrsIr = msgf::DatasetManager::scanThermalImages((rawDir / "msrs").string());
+    require(msrsIr.size() == 2, "scanThermalImages on msrs should find only test/ir (2 imgs)");
+
+    const auto roadIr = msgf::DatasetManager::scanThermalImages((rawDir / "roadscene").string());
+    require(roadIr.size() == 2, "scanThermalImages on roadscene should skip crop_HR_visible");
+
+    const auto strided = msgf::DatasetManager::scanThermalImages(tmpRoot.string(), 4);
+    require(strided.size() == 4, "stride limit failed");
+
+    fs::remove_all(tmpRoot, ec);
+}
+
 } // namespace
 
 int main()
@@ -291,6 +352,7 @@ int main()
         testMetricsEq19To21AndPiqe();
         testSampleImageSmokeIfAvailable();
         testBaselinesSummaryAndExport();
+        testDatasetManagerLayout();
         std::cout << "All MSGF-TIR unit & invariant tests passed!\n";
         return 0;
     } catch (const std::exception& e) {

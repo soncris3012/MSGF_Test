@@ -1,6 +1,7 @@
 #include "ui/DatasetBenchmarkWidget.h"
 
 #include "core/BenchmarkExport.h"
+#include "core/DatasetManager.h"
 #include "core/MsgfAlgorithm.h"
 #include "core/MsgfBaselines.h"
 #include "core/MsgfMetrics.h"
@@ -26,6 +27,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -148,14 +150,30 @@ void DatasetBenchmarkWidget::setupUi()
     auto* ctrlLayout = new QVBoxLayout(ctrlBox);
     ctrlLayout->setSpacing(6);
 
-    // Row 1: Folder & Algorithms
+    // Row 1: Dataset Selector, Folder Picker, Limit & Algorithms
     auto* topRow = new QHBoxLayout();
-    m_btnChooseDataset = new QPushButton(QStringLiteral("Chọn thư mục Dataset..."), ctrlBox);
+    m_comboBenchDataset = new QComboBox(ctrlBox);
+    m_comboBenchDataset->setObjectName(QStringLiteral("comboBenchDataset"));
+    m_comboBenchDataset->setMinimumHeight(28);
+    m_comboBenchDataset->setMinimumWidth(210);
+    m_comboBenchDataset->setToolTip(QStringLiteral("Chọn nhanh dataset phát hiện tự động (Paper Samples, FLIR, LLVIP, MSRS, RoadScene)"));
+
+    m_btnChooseDataset = new QPushButton(QStringLiteral("Chọn thư mục..."), ctrlBox);
     m_btnChooseDataset->setMinimumHeight(28);
 
     m_lblDatasetPath = new QLabel(QStringLiteral("Chưa chọn thư mục"), ctrlBox);
     m_lblDatasetPath->setStyleSheet(QStringLiteral("color: #b8bec9;"));
     m_lblDatasetPath->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* lblLimit = new QLabel(QStringLiteral("Giới hạn:"), ctrlBox);
+    m_spinMaxImages = new QSpinBox(ctrlBox);
+    m_spinMaxImages->setObjectName(QStringLiteral("spinMaxImages"));
+    m_spinMaxImages->setMinimumHeight(26);
+    m_spinMaxImages->setRange(0, 50000);
+    m_spinMaxImages->setSingleStep(50);
+    m_spinMaxImages->setValue(0);
+    m_spinMaxImages->setSpecialValueText(QStringLiteral("Tất cả"));
+    m_spinMaxImages->setToolTip(QStringLiteral("0 = chạy toàn bộ ảnh; >0 = lấy mẫu đều N ảnh trên toàn dataset"));
 
     auto* lblAlgos = new QLabel(QStringLiteral("Thuật toán:"), ctrlBox);
     m_chkHE = new QCheckBox(QStringLiteral("HE"), ctrlBox);
@@ -168,8 +186,11 @@ void DatasetBenchmarkWidget::setupUi()
     m_chkMSGF->setChecked(true);
     m_chkMSGF->setStyleSheet(QStringLiteral("font-weight: 600; color: #34d399;"));
 
+    topRow->addWidget(m_comboBenchDataset);
     topRow->addWidget(m_btnChooseDataset);
     topRow->addWidget(m_lblDatasetPath, 1);
+    topRow->addWidget(lblLimit);
+    topRow->addWidget(m_spinMaxImages);
     topRow->addWidget(lblAlgos);
     topRow->addWidget(m_chkHE);
     topRow->addWidget(m_chkGFDDE);
@@ -374,7 +395,11 @@ void DatasetBenchmarkWidget::setupUi()
 
 void DatasetBenchmarkWidget::setupConnections()
 {
+    connect(m_comboBenchDataset, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &DatasetBenchmarkWidget::onBenchDatasetSelected);
     connect(m_btnChooseDataset, &QPushButton::clicked, this, &DatasetBenchmarkWidget::onChooseDataset);
+    connect(m_spinMaxImages, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &DatasetBenchmarkWidget::onMaxImagesChanged);
     connect(m_btnRun, &QPushButton::clicked, this, &DatasetBenchmarkWidget::onRunBenchmark);
     connect(m_btnCancel, &QPushButton::clicked, this, &DatasetBenchmarkWidget::onCancelBenchmark);
     connect(m_btnExportCsv, &QPushButton::clicked, this, &DatasetBenchmarkWidget::onExportCsv);
@@ -397,6 +422,27 @@ void DatasetBenchmarkWidget::setupConnections()
             this, &DatasetBenchmarkWidget::onDetailCellDoubleClicked);
     connect(m_watcher, &QFutureWatcher<void>::finished,
             this, &DatasetBenchmarkWidget::onBenchmarkFinished);
+}
+
+void DatasetBenchmarkWidget::setAvailableDatasets(
+    const std::vector<msgf::DatasetEntry>& datasets,
+    const QString& defaultRoot)
+{
+    m_defaultRoot = defaultRoot;
+    const QSignalBlocker blocker(m_comboBenchDataset);
+    m_comboBenchDataset->clear();
+    for (const auto& ds : datasets) {
+        m_comboBenchDataset->addItem(
+            QString::fromStdString(ds.displayName),
+            QString::fromStdString(ds.folderPath)
+        );
+    }
+    if (!m_datasetDir.isEmpty()) {
+        const int idx = m_comboBenchDataset->findData(m_datasetDir);
+        if (idx >= 0) {
+            m_comboBenchDataset->setCurrentIndex(idx);
+        }
+    }
 }
 
 void DatasetBenchmarkWidget::setDatasetDirectory(const QString& dirPath)
@@ -424,29 +470,51 @@ void DatasetBenchmarkWidget::scanDirectory(const QString& dirPath)
         return;
     }
 
-    const QStringList filters = {
-        QStringLiteral("*.png"), QStringLiteral("*.jpg"), QStringLiteral("*.jpeg"),
-        QStringLiteral("*.bmp"), QStringLiteral("*.tif"), QStringLiteral("*.tiff")
-    };
-    const QFileInfoList entries = dir.entryInfoList(filters, QDir::Files, QDir::Name);
-    const bool isBuiltInSamples = (dir.dirName() == QStringLiteral("sample_images"));
+    const int maxLimit = m_spinMaxImages ? m_spinMaxImages->value() : 0;
+    const std::vector<std::string> scanned =
+        msgf::DatasetManager::scanThermalImages(dirPath.toStdString(), maxLimit);
 
     m_imageFiles.clear();
-    for (const QFileInfo& fi : entries) {
-        const QString name = fi.fileName();
-        if (isBuiltInSamples && (name.contains(QStringLiteral("_paper_ours"))
-                                 || name.startsWith(QStringLiteral("fig3_")))) {
-            continue;
-        }
-        m_imageFiles.append(fi.absoluteFilePath());
+    m_imageFiles.reserve(static_cast<int>(scanned.size()));
+    for (const std::string& p : scanned) {
+        m_imageFiles.append(QString::fromStdString(p));
     }
 
     m_datasetDir = dir.canonicalPath();
     m_lblDatasetPath->setText(
         QStringLiteral("%1 (%2 ảnh)").arg(m_datasetDir).arg(m_imageFiles.size())
     );
+    m_lblDatasetPath->setToolTip(m_datasetDir);
     m_progressBar->setRange(0, std::max(1, static_cast<int>(m_imageFiles.size())));
     m_progressBar->setValue(0);
+
+    if (m_comboBenchDataset) {
+        const QSignalBlocker blocker(m_comboBenchDataset);
+        const int idx = m_comboBenchDataset->findData(m_datasetDir);
+        if (idx >= 0) {
+            m_comboBenchDataset->setCurrentIndex(idx);
+        } else {
+            const QString customLabel = QStringLiteral("Custom: %1 (%2 ảnh)")
+                                            .arg(QFileInfo(m_datasetDir).fileName())
+                                            .arg(m_imageFiles.size());
+            // Update or append custom entry
+            int customIdx = -1;
+            for (int i = 0; i < m_comboBenchDataset->count(); ++i) {
+                if (m_comboBenchDataset->itemText(i).startsWith(QStringLiteral("Custom:"))) {
+                    customIdx = i;
+                    break;
+                }
+            }
+            if (customIdx >= 0) {
+                m_comboBenchDataset->setItemText(customIdx, customLabel);
+                m_comboBenchDataset->setItemData(customIdx, m_datasetDir);
+                m_comboBenchDataset->setCurrentIndex(customIdx);
+            } else {
+                m_comboBenchDataset->addItem(customLabel, m_datasetDir);
+                m_comboBenchDataset->setCurrentIndex(m_comboBenchDataset->count() - 1);
+            }
+        }
+    }
 }
 
 std::vector<msgf::BenchmarkAlgorithmId> DatasetBenchmarkWidget::selectedAlgorithms() const
@@ -465,7 +533,9 @@ void DatasetBenchmarkWidget::setRunningState(bool running)
     m_isRunning = running;
     m_btnRun->setEnabled(!running);
     m_btnCancel->setEnabled(running);
+    m_comboBenchDataset->setEnabled(!running);
     m_btnChooseDataset->setEnabled(!running);
+    m_spinMaxImages->setEnabled(!running);
     m_chkHE->setEnabled(!running);
     m_chkGFDDE->setEnabled(!running);
     m_chkBFDDE->setEnabled(!running);
@@ -480,14 +550,35 @@ void DatasetBenchmarkWidget::setRunningState(bool running)
 
 void DatasetBenchmarkWidget::onChooseDataset()
 {
-    const QString start = m_datasetDir.isEmpty() ? QDir::homePath() : m_datasetDir;
+    const bool onSample = m_datasetDir.endsWith(QStringLiteral("/sample_images"));
+    const QString start = (!m_defaultRoot.isEmpty() && (m_datasetDir.isEmpty() || onSample))
+                              ? m_defaultRoot
+                              : (m_datasetDir.isEmpty() ? QDir::homePath() : m_datasetDir);
     const QString chosen = QFileDialog::getExistingDirectory(
         this,
-        QStringLiteral("Chọn thư mục Dataset ảnh nhiệt"),
+        QStringLiteral("Chọn thư mục Dataset ảnh nhiệt (hỗ trợ quét lồng QART_Datasets)"),
         start
     );
     if (!chosen.isEmpty()) {
         scanDirectory(chosen);
+    }
+}
+
+void DatasetBenchmarkWidget::onBenchDatasetSelected(int index)
+{
+    if (index < 0 || index >= m_comboBenchDataset->count()) {
+        return;
+    }
+    const QString path = m_comboBenchDataset->itemData(index).toString();
+    if (!path.isEmpty()) {
+        scanDirectory(path);
+    }
+}
+
+void DatasetBenchmarkWidget::onMaxImagesChanged(int /*value*/)
+{
+    if (!isRunning() && !m_datasetDir.isEmpty()) {
+        scanDirectory(m_datasetDir);
     }
 }
 

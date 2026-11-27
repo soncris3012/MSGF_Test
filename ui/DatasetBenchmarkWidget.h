@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/BenchmarkTypes.h"
+#include "core/DatasetManager.h"
 #include "core/MsgfParams.h"
 
 #include <QFutureWatcher>
@@ -20,6 +21,7 @@ class QLabel;
 class QLineEdit;
 class QProgressBar;
 class QPushButton;
+class QSpinBox;
 class QTableWidget;
 class QChartView;
 
@@ -34,6 +36,10 @@ public:
     explicit DatasetBenchmarkWidget(QWidget* parent = nullptr);
     ~DatasetBenchmarkWidget() override;
 
+    void setAvailableDatasets(
+        const std::vector<msgf::DatasetEntry>& datasets,
+        const QString& defaultRoot = {}
+    );
     void setDatasetDirectory(const QString& dirPath);
     void setMsgfParams(const MsgfParams& params);
     [[nodiscard]] bool isRunning() const noexcept;
@@ -43,6 +49,8 @@ signals:
 
 private slots:
     void onChooseDataset();
+    void onBenchDatasetSelected(int index);
+    void onMaxImagesChanged(int value);
     void onRunBenchmark();
     void onCancelBenchmark();
     void onExportCsv();
@@ -78,6 +86,7 @@ private:
 
     [[nodiscard]] std::vector<msgf::BenchmarkAlgorithmId> selectedAlgorithms() const;
 
+    QString m_defaultRoot;
     QString m_datasetDir;
     QStringList m_imageFiles;
     MsgfParams m_msgfParams;
@@ -92,7 +101,9 @@ private:
     QFutureWatcher<void>* m_watcher = nullptr;
 
     // Controls
+    QComboBox* m_comboBenchDataset = nullptr;
     QPushButton* m_btnChooseDataset = nullptr;
+    QSpinBox* m_spinMaxImages = nullptr;
     QLabel* m_lblDatasetPath = nullptr;
     QCheckBox* m_chkHE = nullptr;
     QCheckBox* m_chkGFDDE = nullptr;

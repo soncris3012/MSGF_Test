@@ -106,6 +106,36 @@
            </layout>
           </item>
           <item>
+           <layout class="QHBoxLayout" name="datasetRootLayout">
+            <item>
+             <widget class="QComboBox" name="comboDataset">
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Select discovered dataset (Paper Samples, FLIR, LLVIP, MSRS, RoadScene)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnSetRoot">
+              <property name="maximumWidth">
+               <number>72</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Set dataset root folder (e.g. ~/QART_Datasets)</string>
+              </property>
+              <property name="text">
+               <string>Root...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
            <layout class="QHBoxLayout" name="navLayout">
             <item>
              <widget class="QPushButton" name="btnPrev">
