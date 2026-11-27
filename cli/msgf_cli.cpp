@@ -2,6 +2,7 @@
 #include "core/MsgfAlgorithm.h"
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
+#include "core/N5Algorithm.h"
 
 #include <opencv2/imgcodecs.hpp>
 
@@ -22,6 +23,7 @@ void printUsage(const char* prog)
 {
     std::cout << "Usage: " << prog << " [options]\n"
               << "  --input <path>       Input image file or directory (default: sample_images)\n"
+              << "  --algo <msgf|n5>     Enhancement algorithm (default: msgf)\n"
               << "  --output-dir <dir>   Save enhanced PNGs (and optional layers) to directory\n"
               << "  --save-layers        Also export B3, D1..D3, IB_clahe, ID_fused per image\n"
               << "  --csv <file>         Write CSV metrics report\n"
@@ -61,6 +63,7 @@ int main(int argc, char* argv[])
     fs::path inputPath = "sample_images";
     fs::path outputDir;
     fs::path csvPath;
+    std::string algoMode = "msgf";
     bool saveLayers = false;
     bool includeAll = false;
     int maxImages = 0;
@@ -79,6 +82,8 @@ int main(int argc, char* argv[])
         if (arg == "--help" || arg == "-h") {
             printUsage(argv[0]);
             return 0;
+        } else if (arg == "--algo") {
+            algoMode = needVal("--algo");
         } else if (arg == "--input") {
             inputPath = needVal("--input");
         } else if (arg == "--output-dir") {
@@ -196,10 +201,26 @@ int main(int argc, char* argv[])
             continue;
         }
 
-        const MsgfOutputs out = MsgfAlgorithm::run(img, params);
-        const MsgfMetricResult m = MsgfMetrics::evaluate(out.input8U, out.output8U);
+        cv::Mat in8U;
+        cv::Mat out8U;
+        double elapsedMs = 0.0;
+        MsgfOutputs msgfOut;
+        msgf::N5Outputs n5Out;
 
-        sumMs += out.elapsedMs;
+        if (algoMode == "n5") {
+            n5Out = msgf::N5Algorithm::run(img, msgf::N5Params{});
+            in8U = n5Out.input8U;
+            out8U = n5Out.output8U;
+            elapsedMs = n5Out.elapsedMs;
+        } else {
+            msgfOut = MsgfAlgorithm::run(img, params);
+            in8U = msgfOut.input8U;
+            out8U = msgfOut.output8U;
+            elapsedMs = msgfOut.elapsedMs;
+        }
+        const MsgfMetricResult m = MsgfMetrics::evaluate(in8U, out8U);
+
+        sumMs += elapsedMs;
         sumPsnr += m.psnr;
         sumIeOut += m.ie;
         sumAgOut += m.ag;
@@ -213,7 +234,7 @@ int main(int argc, char* argv[])
 
         std::cout << std::left << std::setw(26) << file.filename().string()
                   << std::right << std::fixed << std::setprecision(2)
-                  << std::setw(10) << out.elapsedMs
+                  << std::setw(10) << elapsedMs
                   << std::setw(10) << m.psnr
                   << std::setw(15) << ieStr.str()
                   << std::setw(17) << agStr.str()
@@ -221,8 +242,8 @@ int main(int argc, char* argv[])
 
         if (csv.is_open()) {
             csv << file.filename().string() << ','
-                << out.output8U.cols << ',' << out.output8U.rows << ','
-                << std::fixed << std::setprecision(3) << out.elapsedMs << ','
+                << out8U.cols << ',' << out8U.rows << ','
+                << std::fixed << std::setprecision(3) << elapsedMs << ','
                 << m.psnr << ','
                 << m.inputStats.ie << ',' << m.ie << ','
                 << m.inputStats.ag << ',' << m.ag << ','
@@ -232,20 +253,21 @@ int main(int argc, char* argv[])
 
         if (!outputDir.empty()) {
             const std::string stem = file.stem().string();
-            cv::imwrite((outputDir / (stem + "_msgf.png")).string(), out.output8U);
-            if (saveLayers) {
-                auto save01 = [&](const std::string& suffix, const cv::Mat& layer) {
+            const std::string suffix = (algoMode == "n5") ? "_n5.png" : "_msgf.png";
+            cv::imwrite((outputDir / (stem + suffix)).string(), out8U);
+            if (saveLayers && algoMode != "n5") {
+                auto save01 = [&](const std::string& layerSuffix, const cv::Mat& layer) {
                     cv::Mat clamped, u8;
                     cv::min(cv::max(layer, 0.0f), 1.0f, clamped);
                     clamped.convertTo(u8, CV_8U, 255.0);
-                    cv::imwrite((outputDir / (stem + suffix)).string(), u8);
+                    cv::imwrite((outputDir / (stem + layerSuffix)).string(), u8);
                 };
-                save01("_B3.png", out.B3);
-                save01("_IB_clahe.png", out.IB_clahe);
-                cv::imwrite((outputDir / (stem + "_D1.png")).string(), MsgfAlgorithm::normalizeForDisplay(out.D1));
-                cv::imwrite((outputDir / (stem + "_D2.png")).string(), MsgfAlgorithm::normalizeForDisplay(out.D2));
-                cv::imwrite((outputDir / (stem + "_D3.png")).string(), MsgfAlgorithm::normalizeForDisplay(out.D3));
-                cv::imwrite((outputDir / (stem + "_ID_fused.png")).string(), MsgfAlgorithm::normalizeForDisplay(out.ID_fused));
+                save01("_B3.png", msgfOut.B3);
+                save01("_IB_clahe.png", msgfOut.IB_clahe);
+                cv::imwrite((outputDir / (stem + "_D1.png")).string(), MsgfAlgorithm::normalizeForDisplay(msgfOut.D1));
+                cv::imwrite((outputDir / (stem + "_D2.png")).string(), MsgfAlgorithm::normalizeForDisplay(msgfOut.D2));
+                cv::imwrite((outputDir / (stem + "_D3.png")).string(), MsgfAlgorithm::normalizeForDisplay(msgfOut.D3));
+                cv::imwrite((outputDir / (stem + "_ID_fused.png")).string(), MsgfAlgorithm::normalizeForDisplay(msgfOut.ID_fused));
             }
         }
     }

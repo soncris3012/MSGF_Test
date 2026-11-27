@@ -66,17 +66,19 @@
   * Hoặc liên kết tĩnh target `msgf_widget` để nhúng trực tiếp `new MsgfForm(parent)` vào bất kỳ `QTabWidget` / `QMainWindow` nào khác.
   * Tách riêng hoàn toàn thư viện lõi `msgf_core` (thuần C++17 + OpenCV, **không phụ thuộc Qt**) dùng chung cho cả GUI, CLI và Unit Tests.
 * **Xử lý nền không treo UI**: Dùng `QtConcurrent::run` + `QFutureWatcher` kết hợp cơ chế `generation ID` và debounce `60 ms` — kéo `QSpinBox`/`QDoubleSpinBox` liên tục không làm đơ giao diện và tự loại bỏ khung cũ lỗi thời.
-* **4 Tab trực quan hóa & Benchmark toàn Dataset**:
-  1. **Compare (Input vs Output)**: So sánh song song ảnh gốc (`input8U`) và ảnh tăng cường (`output8U`).
-  2. **Decomposition (Figure 3)**: Lưới $2 \times 3$ hiển thị đồng thời `Original (I)`, `D1` (nhỏ), `D2` (vừa), `D3` (lớn) đã qua chuẩn hóa hiển thị `normalizeForDisplay`, lớp nền `B3` và lớp nền sau CLAHE `IB`.
-  3. **Fused Details & Paper Ref**: Quan sát tổng chi tiết `ID_fused` và ảnh kết quả tham chiếu từ bài báo (`*_paper_ours.png`, nếu có).
-  4. **Dataset Benchmark & Charts (`DatasetBenchmarkWidget`)**: Công cụ benchmark thực chiến cả thư mục dataset (FLIR / LLVIP / MSRS / `sample_images`):
-     * Chạy đa luồng không treo UI (`QtConcurrent::run` + `std::atomic<bool>` hủy ngang an toàn + cập nhật `QProgressBar` thời gian thực).
-     * So sánh đồng thời **Original**, **HE**, **GF&DDE**, **BF&DDE**, và **MSGF-TIR** (dùng tham số hiện tại đang tinh chỉnh ở cột trái).
-     * **Bảng 1 — Tổng hợp (`Mean ± Std` & `Win Rate (%)`)**: gắn mũi tên hướng tối ưu (`PSNR ↑`, `IE ↑`, `AG ↑`, `PIQE ↓`, `Time ↓`), tô màu xanh lá cho ô tốt nhất và xanh dương gạch chân cho ô đứng nhì.
-     * **Bảng 2 — Chi tiết từng ảnh**: hiển thị đầy đủ `PSNR`, `IE gốc/out`, `ΔIE`, `AG gốc/out`, `ΔAG`, `PIQE`, `ΔPIQE`, `Time (ms)` với `NumericTableItem` sắp xếp đúng theo giá trị số thực, ô tìm kiếm & lọc (`ΔIE > 0`, `ΔIE < 0`, `ΔAG > 0`, `ΔPIQE < 0`), và **double-click dòng bất kỳ để mở thẳng ảnh lên Tab Compare & Decomposition**.
-     * **3 Biểu đồ động (`Qt6::Charts`)**: *Grouped Bar Chart* (có nhãn giá trị trên đỉnh cột), *Per-Image Trend* (`QLineSeries`), và *Speed vs Quality Trade-off* (`QScatterSeries`), kèm nút **Lưu ảnh PNG**.
-     * **Xuất báo cáo nhanh**: **Xuất CSV chuẩn UTF-8 BOM** (`dataset_summary.csv` & `dataset_detail.csv` mở thẳng Excel không lỗi font tiếng Việt), **Copy LaTeX** (`\textbf{}` / `\underline{}`), và **Copy Markdown**.
+* **Giao diện 2 Trang song song (MSGF-TIR & Accepted N5)**:
+  * **Trang 1 — `MSGF-TIR` (`MsgfForm`)**: gồm 3 tab tập trung vào dữ liệu thực tế (*Compare Input vs Output*, *Decomposition Figure 3 (2×3)*, *Dataset Benchmark & Charts*).
+  * **Trang 2 — `N5` (`N5Form`)**: cài đặt chuẩn xác từng bit theo **Accepted N5 (`Guided-CLAHE + Post-Half`)**:
+    * Khóa mặc định tham số **Accepted N5 cố định** (`w1=7`, `CLAHE clip=2.0, grid=8×8`, `w2=3`, `Post-Half β=0.5`, `float64`, `BORDER_REFLECT_101`, làm tròn *ties-to-even* kiểu `np.rint`), hoặc mở khóa để thử nghiệm ablation.
+    * 3 tab tương ứng: **Compare (Input vs N5)**, **N5 Pipeline Stages (6 tầng: `B1, R1, C, U, B2, R2`)**, và **Dataset Benchmark & Charts**.
+    * Bảng **Stage-by-Stage Ablation (Live)** ở cột phải đo tự động `PSNR`, `IE`, `AG`, `PIQE` qua 4 chặng: `Input (P)` → `CLAHE Base (C)` → `Stage-1 (U)` → `Final N5 (Y)`.
+* **Tab Dataset Benchmark & Charts (`DatasetBenchmarkWidget`)** (có mặt trên cả 2 trang):
+  * Chạy đa luồng không treo UI (`QtConcurrent::run` + `std::atomic<bool>` hủy ngang an toàn + cập nhật `QProgressBar` thời gian thực).
+  * So sánh đồng thời **Original**, **HE**, **GF&DDE**, **BF&DDE**, **MSGF-TIR**, và **N5** (mỗi worker dùng instance N5 độc lập đảm bảo thread-safe).
+  * **Bảng 1 — Tổng hợp (`Mean ± Std` & `Win Rate (%)`)**: gắn mũi tên hướng tối ưu (`PSNR ↑`, `IE ↑`, `AG ↑`, `PIQE ↓`, `Time ↓`), tô màu xanh lá cho ô tốt nhất và xanh dương gạch chân cho ô đứng nhì.
+  * **Bảng 2 — Chi tiết từng ảnh**: hiển thị đầy đủ `PSNR`, `IE gốc/out`, `ΔIE`, `AG gốc/out`, `ΔAG`, `PIQE`, `ΔPIQE`, `Time (ms)` với `NumericTableItem` sắp xếp đúng theo giá trị số thực, ô tìm kiếm & lọc (`ΔIE > 0`, `ΔIE < 0`, `ΔAG > 0`, `ΔPIQE < 0`), và **double-click dòng bất kỳ để mở thẳng ảnh lên Tab Compare**.
+  * **3 Biểu đồ động (`Qt6::Charts`)**: *Grouped Bar Chart* (có nhãn giá trị trên đỉnh cột), *Per-Image Trend* (`QLineSeries`), và *Speed vs Quality Trade-off* (`QScatterSeries`), kèm nút **Lưu ảnh PNG**.
+  * **Xuất báo cáo nhanh**: **Xuất CSV chuẩn UTF-8 BOM** (`dataset_summary.csv` & `dataset_detail.csv` mở thẳng Excel không lỗi font tiếng Việt), **Copy LaTeX** (`\textbf{}` / `\underline{}`), và **Copy Markdown**.
   * *Tương tác chuột trên Canvas*: Lăn chuột giữa để zoom tại tâm trỏ chuột, kéo chuột trái để pan, **nhấp đúp chuột trái** để reset fit-to-window trên toàn bộ các khung ảnh.
 * **Tự động nhận diện `QART_Datasets` & quét thư mục lồng thông minh (`DatasetManager`)**:
   * Tự động dò tìm `$IR_DATASET_DIR`, `$QART_DATASETS_DIR`, `~/QART_Datasets/raw`, `~/QART_Datasets` (và lưu thư mục gốc người dùng chọn bằng `Root...` qua `QSettings`).
@@ -96,18 +98,19 @@ MSGF_Test/
 ├── LICENSE                     # Giấy phép MIT
 ├── .gitignore
 ├── run_gui.sh                  # Script tự động cấu hình, biên dịch Release và khởi chạy MsgfTirApp
-├── main.cpp                    # Entry point độc lập bọc MsgfForm trong QMainWindow
+├── main.cpp                    # Entry point độc lập tạo QTabWidget 2 trang (MSGF-TIR & Accepted N5)
 ├── core/
 │   ├── MsgfParams.h              # Cấu trúc MsgfParams, MsgfOutputs và dữ liệu tham chiếu Table 1
 │   ├── MsgfAlgorithm.h/.cpp      # Thuần C++17 & OpenCV: 3-scale Self-GF, CLAHE, Dynamic Linear, Fusion
+│   ├── N5Algorithm.h/.cpp        # Accepted N5 bit-exact (Guided-CLAHE + Post-Half, float64, ties-to-even)
 │   ├── MsgfMetrics.h/.cpp        # Đo PSNR, IE, AG (Eq. 19–21) và PIQE (Venkatanath 2015)
-│   ├── MsgfBaselines.h/.cpp      # Thuật toán đối chứng Table 1: HE, GF&DDE, BF&DDE
+│   ├── MsgfBaselines.h/.cpp      # Thuật toán đối chứng & điều phối: HE, GF&DDE, BF&DDE, MSGF-TIR, N5
 │   ├── DatasetManager.h/.cpp     # Tự động dò QART_Datasets & quét đệ quy ảnh nhiệt (bỏ RGB/labels)
 │   ├── BenchmarkTypes.h          # Cấu trúc ImageBenchmarkRow, AlgoSummaryRow, Mean ± Std & Win Rate
 │   └── BenchmarkExport.h         # Xuất CSV (UTF-8 BOM), bảng LaTeX (\textbf/\underline) & Markdown
 ├── ui/
-│   ├── MsgfForm.ui               # File giao diện Qt Designer (QSplitter 3 cột, 4 tab, Table 1)
-│   ├── MsgfForm.h/.cpp           # Signal/Slot, background QtConcurrent worker, export & đồng bộ view
+│   ├── MsgfForm.ui / .h / .cpp   # Trang MSGF-TIR (3 tab: Compare, Decomposition, Benchmark & Charts)
+│   ├── N5Form.ui / .h / .cpp     # Trang Accepted N5 (3 tab: Compare, 6 Stages, Benchmark + Ablation table)
 │   ├── DatasetBenchmarkWidget.h/.cpp # Tab Dataset Benchmark & 3 biểu đồ động Qt6::Charts
 │   ├── NumericTableItem.h        # QTableWidgetItem sắp xếp chuẩn theo số thực (Qt::UserRole)
 │   └── ImageCanvas.h/.cpp        # Custom QWidget hiển thị ảnh zoom/pan/double-click reset
@@ -156,13 +159,12 @@ ctest --test-dir build --output-on-failure
 # Benchmark mặc định trên thư mục sample_images/
 ./build/msgf_cli --input sample_images
 
-# Chạy trên thư mục dataset FLIR/LLVIP, xuất ảnh tăng cường, các tầng phân rã và báo cáo CSV
-./build/msgf_cli --input /path/to/thermal_dir \
+# Chạy trên thư mục dataset FLIR/LLVIP với MSGF-TIR hoặc N5 (--algo msgf|n5)
+./build/msgf_cli --algo msgf --input ~/QART_Datasets/raw/flir/images_thermal_val --max 100 \
   --output-dir results/flir_out --save-layers \
-  --csv results/flir_metrics.csv \
-  --r1 2 --eps1 0.005 --r2 6 --eps2 0.02 --r3 16 --eps3 0.08 \
-  --clip 2.0 --grid 8 --alpha1 1.5 --alpha2 1.5 --alpha3 1.5 \
-  --p 1.0 --q 1.0
+  --csv results/flir_metrics.csv
+./build/msgf_cli --algo n5 --input ~/QART_Datasets/raw/llvip/infrared --max 100 \
+  --csv results/llvip_n5.csv
 ```
 
 ---

@@ -59,9 +59,6 @@ MsgfForm::MsgfForm(QWidget* parent)
     ui->canvasDecompD3->setTitle(QStringLiteral("(d) Large Detail D3 (norm)"));
     ui->canvasDecompB3->setTitle(QStringLiteral("(e) Base Layer B3"));
     ui->canvasDecompIB->setTitle(QStringLiteral("(f) Enhanced Base IB (CLAHE)"));
-    ui->canvasIDFused->setTitle(QStringLiteral("Fused Details ID (norm)"));
-    ui->canvasPaperRef->setTitle(QStringLiteral("Paper Reference (Fig. 6-8e)"));
-    ui->canvasPaperRef->setPlaceholderText(QStringLiteral("No paper reference matched for this file"));
 
     initializeSampleDirectory();
 }
@@ -285,9 +282,7 @@ std::vector<ImageCanvas*> MsgfForm::allCanvases() const
         ui->canvasDecompD2,
         ui->canvasDecompD3,
         ui->canvasDecompB3,
-        ui->canvasDecompIB,
-        ui->canvasIDFused,
-        ui->canvasPaperRef
+        ui->canvasDecompIB
     };
 }
 
@@ -483,7 +478,6 @@ void MsgfForm::setInputImage(const cv::Mat& image, const QString& label)
         return;
     }
     m_inputMat = image.clone();
-    m_paperRefMat.release();
     m_currentLabel = label;
 
     ui->lblImageInfo->setText(
@@ -508,17 +502,6 @@ bool MsgfForm::loadImageFile(const QString& filePath)
     const QFileInfo fi(filePath);
     m_inputMat = loaded;
     m_currentLabel = fi.fileName();
-
-    // Check if matching *_paper_ours.png exists alongside *_original.png
-    m_paperRefMat.release();
-    if (fi.fileName().endsWith(QStringLiteral("_original.png"))) {
-        QString refName = fi.fileName();
-        refName.replace(QStringLiteral("_original.png"), QStringLiteral("_paper_ours.png"));
-        const QString refPath = fi.dir().filePath(refName);
-        if (QFileInfo::exists(refPath)) {
-            m_paperRefMat = cv::imread(refPath.toStdString(), cv::IMREAD_UNCHANGED);
-        }
-    }
 
     const QString depthLabel = (loaded.depth() == CV_16U) ? QStringLiteral("16-bit") : QStringLiteral("8-bit");
     ui->lblImageInfo->setText(
@@ -733,14 +716,6 @@ void MsgfForm::updateViewers()
     cv::min(cv::max(m_lastOutputs.IB_clahe, 0.0f), 1.0f, ibDisp);
     ibDisp.convertTo(ibDisp, CV_8U, 255.0);
     ui->canvasDecompIB->setImage(matToQImage(ibDisp));
-
-    // Tab 3: Fused details & optional paper reference
-    ui->canvasIDFused->setImage(matToQImage(MsgfAlgorithm::normalizeForDisplay(m_lastOutputs.ID_fused)));
-    if (!m_paperRefMat.empty()) {
-        ui->canvasPaperRef->setImage(matToQImage(MsgfAlgorithm::toGray8U(m_paperRefMat)));
-    } else {
-        ui->canvasPaperRef->setImage(QImage{});
-    }
 }
 
 void MsgfForm::updateMetricsDisplay()

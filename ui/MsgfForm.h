@@ -100,7 +100,6 @@ private:
     QString m_currentLabel;
 
     cv::Mat m_inputMat;
-    cv::Mat m_paperRefMat;
     MsgfOutputs m_lastOutputs;
     MsgfMetricResult m_lastMetrics;
 

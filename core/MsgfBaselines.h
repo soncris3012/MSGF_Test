@@ -2,6 +2,7 @@
 
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
+#include "core/N5Algorithm.h"
 
 #include <opencv2/core.hpp>
 
@@ -15,7 +16,8 @@ enum class BenchmarkAlgorithmId {
     HE,
     GF_DDE,
     BF_DDE,
-    MSGF_TIR
+    MSGF_TIR,
+    N5
 };
 
 struct BaselineRunResult {
@@ -52,7 +54,8 @@ public:
     static BaselineRunResult runAlgorithm(
         BenchmarkAlgorithmId id,
         const cv::Mat& inputGrayOrBgr,
-        const MsgfParams& msgfParams
+        const MsgfParams& msgfParams,
+        const N5Params& n5Params = N5Params{}
     );
 };
 

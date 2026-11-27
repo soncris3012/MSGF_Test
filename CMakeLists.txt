@@ -26,6 +26,8 @@ add_library(msgf_core STATIC
     core/MsgfMetrics.cpp
     core/MsgfBaselines.h
     core/MsgfBaselines.cpp
+    core/N5Algorithm.h
+    core/N5Algorithm.cpp
     core/DatasetManager.h
     core/DatasetManager.cpp
     core/BenchmarkTypes.h
@@ -51,6 +53,9 @@ if(MSGF_BUILD_GUI)
         ui/MsgfForm.ui
         ui/MsgfForm.h
         ui/MsgfForm.cpp
+        ui/N5Form.ui
+        ui/N5Form.h
+        ui/N5Form.cpp
         ui/ImageCanvas.h
         ui/ImageCanvas.cpp
         ui/DatasetBenchmarkWidget.h

@@ -3,6 +3,7 @@
 #include "core/BenchmarkTypes.h"
 #include "core/DatasetManager.h"
 #include "core/MsgfParams.h"
+#include "core/N5Algorithm.h"
 
 #include <QFutureWatcher>
 #include <QString>
@@ -42,6 +43,8 @@ public:
     );
     void setDatasetDirectory(const QString& dirPath);
     void setMsgfParams(const MsgfParams& params);
+    void setN5Params(const msgf::N5Params& params);
+    void setDefaultFocusAlgorithm(msgf::BenchmarkAlgorithmId id);
     [[nodiscard]] bool isRunning() const noexcept;
 
 signals:
@@ -90,6 +93,8 @@ private:
     QString m_datasetDir;
     QStringList m_imageFiles;
     MsgfParams m_msgfParams;
+    msgf::N5Params m_n5Params;
+    msgf::BenchmarkAlgorithmId m_focusAlgo = msgf::BenchmarkAlgorithmId::MSGF_TIR;
 
     std::vector<msgf::BenchmarkAlgorithmId> m_lastOrderedAlgos;
     std::map<msgf::BenchmarkAlgorithmId, std::vector<msgf::ImageBenchmarkRow>> m_perAlgoRows;
@@ -109,6 +114,7 @@ private:
     QCheckBox* m_chkGFDDE = nullptr;
     QCheckBox* m_chkBFDDE = nullptr;
     QCheckBox* m_chkMSGF = nullptr;
+    QCheckBox* m_chkN5 = nullptr;
 
     QPushButton* m_btnRun = nullptr;
     QPushButton* m_btnCancel = nullptr;

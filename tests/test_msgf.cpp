@@ -5,6 +5,7 @@
 #include "core/MsgfBaselines.h"
 #include "core/MsgfMetrics.h"
 #include "core/MsgfParams.h"
+#include "core/N5Algorithm.h"
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -340,6 +341,88 @@ void testDatasetManagerLayout()
     fs::remove_all(tmpRoot, ec);
 }
 
+void testN5ContractsAndBitExactParity()
+{
+    using qart::core::enhancement::N5ThermalEnhancer;
+    using qart::core::enhancement::bypassThermal;
+    using qart::core::enhancement::prepareThermalUint8Plane;
+
+    N5ThermalEnhancer enhancer;
+
+    // 1. Constant preservation across {0, 1, 127, 255}
+    for (int level : {0, 1, 127, 255}) {
+        const cv::Mat source(17, 19, CV_8UC1, cv::Scalar(level));
+        auto result = enhancer.enhance(source);
+        require(result.constantPreserved, "N5 constant flag false");
+        require(cv::norm(source, result.outputImage, cv::NORM_INF) == 0.0,
+                "N5 constant pixels changed");
+        require(result.outputImage.data != source.data, "N5 constant output aliases input");
+
+        const auto algOut = msgf::N5Algorithm::run(source, msgf::N5Params{});
+        require(algOut.constantPreserved && cv::norm(algOut.output8U, result.outputImage, cv::NORM_INF) == 0.0,
+                "N5Algorithm constant parity mismatch");
+    }
+
+    // 2. Geometry edge cases + bit-exact N5Algorithm vs N5ThermalEnhancer parity
+    for (const cv::Size size : {
+             cv::Size(1, 1), cv::Size(17, 1), cv::Size(1, 19), cv::Size(33, 31)
+         }) {
+        cv::Mat source(size, CV_8UC1);
+        cv::RNG random(42);
+        random.fill(source, cv::RNG::UNIFORM, 0, 256);
+
+        const cv::Mat original = source.clone();
+        auto first = enhancer.enhance(source);
+        auto second = enhancer.enhance(source);
+        auto alg = msgf::N5Algorithm::run(source, msgf::N5Params{});
+
+        require(first.outputImage.type() == CV_8UC1 && first.outputImage.size() == source.size(),
+                "N5 output type or geometry mismatch");
+        require(first.outputImage.data != source.data && first.outputImage.data != second.outputImage.data,
+                "N5 output storage alias");
+        require(cv::norm(first.outputImage, second.outputImage, cv::NORM_INF) == 0.0,
+                "N5 repeated call non-deterministic");
+        require(cv::norm(first.outputImage, alg.output8U, cv::NORM_INF) == 0.0,
+                "N5Algorithm parity mismatch vs N5ThermalEnhancer");
+        require(std::isfinite(first.smallRegularization) && first.smallRegularization >= 0.0,
+                "N5 invalid regularization");
+        require(cv::norm(source, original, cv::NORM_INF) == 0.0, "N5 modified input");
+    }
+
+    // 3. Strided ROI invariance
+    cv::Mat parent(21, 25, CV_8UC1);
+    cv::RNG random(123);
+    random.fill(parent, cv::RNG::UNIFORM, 0, 256);
+    const cv::Mat region = parent(cv::Rect(2, 3, 17, 13));
+    const auto regionResult = enhancer.enhance(region);
+    const auto ownedResult = enhancer.enhance(region.clone());
+    require(cv::norm(regionResult.outputImage, ownedResult.outputImage, cv::NORM_INF) == 0.0,
+            "N5 ROI result depends on parent storage");
+
+    // 4. Input rejection & prepareThermalUint8Plane BGR check
+    const int dims3[] = {2, 3, 4};
+    for (const auto& invalid : {
+             cv::Mat(),
+             cv::Mat(3, 4, CV_8UC3),
+             cv::Mat(3, 4, CV_16UC1),
+             cv::Mat(3, 4, CV_64FC1),
+             cv::Mat(3, dims3, CV_8UC1)
+         }) {
+        requireThrowsInvalid([&]() { (void)enhancer.enhance(invalid); }, "N5 accepted invalid mat");
+    }
+
+    cv::Mat bgr(1, 3, CV_8UC3);
+    bgr.at<cv::Vec3b>(0, 0) = {255, 0, 0};
+    bgr.at<cv::Vec3b>(0, 1) = {0, 255, 0};
+    bgr.at<cv::Vec3b>(0, 2) = {0, 0, 255};
+    const cv::Mat gray = prepareThermalUint8Plane(bgr);
+    require(gray.at<unsigned char>(0, 0) < gray.at<unsigned char>(0, 2)
+                && gray.at<unsigned char>(0, 2) < gray.at<unsigned char>(0, 1),
+            "prepareThermalUint8Plane BGR weighting mismatch");
+    const cv::Mat byp = bypassThermal(gray);
+    require(byp.data != gray.data && cv::norm(byp, gray, cv::NORM_INF) == 0.0, "bypassThermal failed");
+}
+
 } // namespace
 
 int main()
@@ -353,7 +436,8 @@ int main()
         testSampleImageSmokeIfAvailable();
         testBaselinesSummaryAndExport();
         testDatasetManagerLayout();
-        std::cout << "All MSGF-TIR unit & invariant tests passed!\n";
+        testN5ContractsAndBitExactParity();
+        std::cout << "All MSGF-TIR & N5 unit & invariant tests passed!\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';

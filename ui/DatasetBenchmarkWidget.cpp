@@ -92,6 +92,7 @@ QColor algoColor(msgf::BenchmarkAlgorithmId id)
     case msgf::BenchmarkAlgorithmId::GF_DDE:   return QColor(56, 189, 248);
     case msgf::BenchmarkAlgorithmId::BF_DDE:   return QColor(168, 85, 247);
     case msgf::BenchmarkAlgorithmId::MSGF_TIR: return QColor(52, 211, 153);
+    case msgf::BenchmarkAlgorithmId::N5:       return QColor(244, 114, 182);
     }
     return QColor(200, 200, 200);
 }
@@ -185,6 +186,9 @@ void DatasetBenchmarkWidget::setupUi()
     m_chkMSGF = new QCheckBox(QStringLiteral("MSGF-TIR"), ctrlBox);
     m_chkMSGF->setChecked(true);
     m_chkMSGF->setStyleSheet(QStringLiteral("font-weight: 600; color: #34d399;"));
+    m_chkN5 = new QCheckBox(QStringLiteral("N5"), ctrlBox);
+    m_chkN5->setChecked(true);
+    m_chkN5->setStyleSheet(QStringLiteral("font-weight: 600; color: #f472b6;"));
 
     topRow->addWidget(m_comboBenchDataset);
     topRow->addWidget(m_btnChooseDataset);
@@ -196,6 +200,7 @@ void DatasetBenchmarkWidget::setupUi()
     topRow->addWidget(m_chkGFDDE);
     topRow->addWidget(m_chkBFDDE);
     topRow->addWidget(m_chkMSGF);
+    topRow->addWidget(m_chkN5);
     ctrlLayout->addLayout(topRow);
 
     // Row 2: Run, Cancel, Progress, Export
@@ -458,6 +463,16 @@ void DatasetBenchmarkWidget::setMsgfParams(const MsgfParams& params)
     m_msgfParams = params;
 }
 
+void DatasetBenchmarkWidget::setN5Params(const msgf::N5Params& params)
+{
+    m_n5Params = params;
+}
+
+void DatasetBenchmarkWidget::setDefaultFocusAlgorithm(msgf::BenchmarkAlgorithmId id)
+{
+    m_focusAlgo = id;
+}
+
 bool DatasetBenchmarkWidget::isRunning() const noexcept
 {
     return m_isRunning || (m_watcher && m_watcher->isRunning());
@@ -525,6 +540,7 @@ std::vector<msgf::BenchmarkAlgorithmId> DatasetBenchmarkWidget::selectedAlgorith
     if (m_chkGFDDE->isChecked()) algos.push_back(msgf::BenchmarkAlgorithmId::GF_DDE);
     if (m_chkBFDDE->isChecked()) algos.push_back(msgf::BenchmarkAlgorithmId::BF_DDE);
     if (m_chkMSGF->isChecked())  algos.push_back(msgf::BenchmarkAlgorithmId::MSGF_TIR);
+    if (m_chkN5->isChecked())    algos.push_back(msgf::BenchmarkAlgorithmId::N5);
     return algos;
 }
 
@@ -540,6 +556,7 @@ void DatasetBenchmarkWidget::setRunningState(bool running)
     m_chkGFDDE->setEnabled(!running);
     m_chkBFDDE->setEnabled(!running);
     m_chkMSGF->setEnabled(!running);
+    m_chkN5->setEnabled(!running);
 
     const bool hasResults = !m_summaries.empty();
     m_btnExportCsv->setEnabled(!running && hasResults);
@@ -607,11 +624,11 @@ void DatasetBenchmarkWidget::onRunBenchmark()
     m_tblDetail->setSortingEnabled(false);
     m_tblDetail->setRowCount(0);
 
-    // Populate detail algorithm selector (default to MSGF-TIR if checked)
+    // Populate detail algorithm selector (default to m_focusAlgo if checked)
     {
         const QSignalBlocker blocker(m_comboDetailAlgo);
         m_comboDetailAlgo->clear();
-        int msgfIdx = -1;
+        int focusIdx = -1;
         for (msgf::BenchmarkAlgorithmId id : algos) {
             if (id == msgf::BenchmarkAlgorithmId::Original) continue;
             const int idx = m_comboDetailAlgo->count();
@@ -619,12 +636,12 @@ void DatasetBenchmarkWidget::onRunBenchmark()
                 QString::fromStdString(msgf::MsgfBaselines::algorithmName(id)),
                 static_cast<int>(id)
             );
-            if (id == msgf::BenchmarkAlgorithmId::MSGF_TIR) {
-                msgfIdx = idx;
+            if (id == m_focusAlgo) {
+                focusIdx = idx;
             }
         }
-        if (msgfIdx >= 0) {
-            m_comboDetailAlgo->setCurrentIndex(msgfIdx);
+        if (focusIdx >= 0) {
+            m_comboDetailAlgo->setCurrentIndex(focusIdx);
         }
     }
 
@@ -639,9 +656,10 @@ void DatasetBenchmarkWidget::onRunBenchmark()
     auto cancelToken = m_cancelFlag;
     const QStringList filesCopy = m_imageFiles;
     const MsgfParams paramsCopy = m_msgfParams;
+    const msgf::N5Params n5ParamsCopy = m_n5Params;
     QPointer<DatasetBenchmarkWidget> guard(this);
 
-    auto future = QtConcurrent::run([guard, currentRunId, cancelToken, filesCopy, algos, paramsCopy, total]() {
+    auto future = QtConcurrent::run([guard, currentRunId, cancelToken, filesCopy, algos, paramsCopy, n5ParamsCopy, total]() {
         for (int i = 0; i < total; ++i) {
             if (cancelToken->load(std::memory_order_relaxed)) {
                 break;
@@ -684,7 +702,7 @@ void DatasetBenchmarkWidget::onRunBenchmark()
                     row.piqe = origStats.piqe;
                     row.runtimeMs = 0.0;
                 } else {
-                    const auto res = msgf::MsgfBaselines::runAlgorithm(id, orig8U, paramsCopy);
+                    const auto res = msgf::MsgfBaselines::runAlgorithm(id, orig8U, paramsCopy, n5ParamsCopy);
                     const MsgfMetricResult m = MsgfMetrics::evaluate(orig8U, res.output8U);
                     row.psnr = m.psnr;
                     row.ie = m.ie;
@@ -765,6 +783,11 @@ void DatasetBenchmarkWidget::refreshSummaryTable()
             f.setBold(true);
             nameItem->setFont(f);
             nameItem->setForeground(QColor(52, 211, 153));
+        } else if (s.algoId == msgf::BenchmarkAlgorithmId::N5) {
+            QFont f = nameItem->font();
+            f.setBold(true);
+            nameItem->setFont(f);
+            nameItem->setForeground(QColor(244, 114, 182));
         }
 
         auto makeDashItem = []() {
@@ -1052,7 +1075,8 @@ void DatasetBenchmarkWidget::refreshChart()
             auto* line = new QLineSeries();
             line->setName(QString::fromStdString(msgf::MsgfBaselines::algorithmName(id)));
             QPen pen(algoColor(id));
-            pen.setWidth(id == msgf::BenchmarkAlgorithmId::MSGF_TIR ? 2 : 1);
+            pen.setWidth((id == msgf::BenchmarkAlgorithmId::MSGF_TIR
+                          || id == msgf::BenchmarkAlgorithmId::N5) ? 2 : 1);
             line->setPen(pen);
 
             for (const auto& r : it->second) {
@@ -1107,7 +1131,8 @@ void DatasetBenchmarkWidget::refreshChart()
 
             auto* scatter = new QScatterSeries();
             scatter->setName(QString::fromStdString(msgf::MsgfBaselines::algorithmName(id)));
-            scatter->setMarkerSize(id == msgf::BenchmarkAlgorithmId::MSGF_TIR ? 9.0 : 7.0);
+            scatter->setMarkerSize((id == msgf::BenchmarkAlgorithmId::MSGF_TIR
+                                    || id == msgf::BenchmarkAlgorithmId::N5) ? 9.0 : 7.0);
             scatter->setColor(algoColor(id));
             scatter->setBorderColor(QColor(24, 24, 28));
 

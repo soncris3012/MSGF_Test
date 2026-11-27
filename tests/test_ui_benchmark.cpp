@@ -1,13 +1,11 @@
 #include "ui/DatasetBenchmarkWidget.h"
 #include "ui/MsgfForm.h"
+#include "ui/N5Form.h"
 #include "ui/NumericTableItem.h"
 
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
-#include <QFileInfo>
-#include <QLineEdit>
-#include <QProgressBar>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -39,6 +37,69 @@ QString findSampleDir()
     return {};
 }
 
+void verifyPageBenchmarkFlow(QWidget& form, const QString& sampleDir, const char* label)
+{
+    form.resize(1360, 840);
+    form.show();
+    QApplication::processEvents();
+
+    auto* tabs = form.findChild<QTabWidget*>(QStringLiteral("viewerTabs"));
+    require(tabs != nullptr && tabs->count() == 3,
+            std::string(label) + " should have exactly 3 viewer tabs (Paper Ref tab removed)");
+
+    auto* bench = form.findChild<DatasetBenchmarkWidget*>(QStringLiteral("benchmarkWidget"));
+    require(bench != nullptr, std::string(label) + " missing DatasetBenchmarkWidget");
+
+    if (sampleDir.isEmpty()) {
+        return;
+    }
+
+    bench->setDatasetDirectory(sampleDir);
+
+    // Switch to Dataset Benchmark & Charts tab (index 2) and click Run
+    tabs->setCurrentIndex(2);
+    auto* runBtn = bench->findChild<QPushButton*>(QStringLiteral("btnRunBench"));
+    require(runBtn != nullptr, "Run Benchmark button not found");
+    runBtn->click();
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    while (bench->isRunning() && std::chrono::steady_clock::now() < deadline) {
+        QApplication::processEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    QApplication::processEvents();
+    require(!bench->isRunning(), "Benchmark did not finish within timeout");
+
+    auto* summaryTbl = bench->findChild<QTableWidget*>(QStringLiteral("tblSummary"));
+    auto* detailTbl = bench->findChild<QTableWidget*>(QStringLiteral("tblDetail"));
+    require(summaryTbl != nullptr && detailTbl != nullptr, "Expected Summary & Detail tables");
+
+    // Default checked: Original + HE + GF&DDE + MSGF-TIR + N5 => 5 summary rows
+    require(summaryTbl->rowCount() == 5, "Expected 5 rows in summary table");
+    require(detailTbl->rowCount() == 3, "Expected 3 sample scene rows in detail table");
+
+    auto* chartTypeCombo = bench->findChild<QComboBox*>(QStringLiteral("comboChartType"));
+    auto* chartMetricCombo = bench->findChild<QComboBox*>(QStringLiteral("comboChartMetric"));
+    auto* chartView = bench->findChild<QChartView*>(QStringLiteral("benchChartView"));
+    require(chartTypeCombo != nullptr && chartMetricCombo != nullptr && chartView != nullptr,
+            "Missing chart widgets");
+
+    for (int t = 0; t < chartTypeCombo->count(); ++t) {
+        chartTypeCombo->setCurrentIndex(t);
+        for (int m = 0; m < chartMetricCombo->count(); ++m) {
+            chartMetricCombo->setCurrentIndex(m);
+            QApplication::processEvents();
+        }
+    }
+    const QPixmap chartPix = chartView->grab();
+    require(!chartPix.isNull() && chartPix.width() > 50, "Chart grab failed");
+
+    // Test double-click 2-way navigation back to Compare tab (index 0)
+    emit detailTbl->cellDoubleClicked(0, 1);
+    QApplication::processEvents();
+    require(tabs->currentIndex() == 0, "Double-click should switch back to Compare tab");
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -57,68 +118,24 @@ int main(int argc, char* argv[])
         NumericTableItem meanStdB(12.10, QStringLiteral("12.10 ± 1.05"));
         require(meanStdA < meanStdB, "NumericTableItem Mean+/-Std sort failed");
 
-        // 2. Instantiate MsgfForm (4 tabs including Dataset Benchmark & Charts)
-        MsgfForm form;
-        form.resize(1360, 840);
-        form.show();
-        QApplication::processEvents();
-
-        auto* tabs = form.findChild<QTabWidget*>(QStringLiteral("viewerTabs"));
-        require(tabs != nullptr && tabs->count() == 4, "MsgfForm should have 4 viewer tabs");
-
-        auto* bench = form.findChild<DatasetBenchmarkWidget*>(QStringLiteral("benchmarkWidget"));
-        require(bench != nullptr, "DatasetBenchmarkWidget missing inside MsgfForm");
-
         const QString sampleDir = findSampleDir();
-        if (!sampleDir.isEmpty()) {
-            bench->setDatasetDirectory(sampleDir);
 
-            // Switch to Benchmark tab and click Run
-            tabs->setCurrentIndex(3);
-            auto* runBtn = bench->findChild<QPushButton*>(QStringLiteral("btnRunBench"));
-            require(runBtn != nullptr, "Run Benchmark button not found");
-            runBtn->click();
-
-            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
-            while (bench->isRunning() && std::chrono::steady_clock::now() < deadline) {
-                QApplication::processEvents();
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
-            }
-            QApplication::processEvents();
-            require(!bench->isRunning(), "Benchmark did not finish within timeout");
-
-            auto* summaryTbl = bench->findChild<QTableWidget*>(QStringLiteral("tblSummary"));
-            auto* detailTbl = bench->findChild<QTableWidget*>(QStringLiteral("tblDetail"));
-            require(summaryTbl != nullptr && detailTbl != nullptr, "Expected Summary & Detail tables");
-
-            // Default checked: Original + HE + GF&DDE + MSGF-TIR => 4 summary rows
-            require(summaryTbl->rowCount() == 4, "Expected 4 rows in summary table");
-            require(detailTbl->rowCount() == 3, "Expected 3 sample scene rows in detail table");
-
-            // Test switching all 3 QtChart modes + metrics and grabbing rendered chart
-            auto* chartTypeCombo = bench->findChild<QComboBox*>(QStringLiteral("comboChartType"));
-            auto* chartMetricCombo = bench->findChild<QComboBox*>(QStringLiteral("comboChartMetric"));
-            auto* chartView = bench->findChild<QChartView*>(QStringLiteral("benchChartView"));
-            require(chartTypeCombo != nullptr && chartMetricCombo != nullptr && chartView != nullptr,
-                    "Missing chart widgets");
-
-            for (int t = 0; t < chartTypeCombo->count(); ++t) {
-                chartTypeCombo->setCurrentIndex(t);
-                for (int m = 0; m < chartMetricCombo->count(); ++m) {
-                    chartMetricCombo->setCurrentIndex(m);
-                    QApplication::processEvents();
-                }
-            }
-            const QPixmap chartPix = chartView->grab();
-            require(!chartPix.isNull() && chartPix.width() > 50, "Chart grab failed");
-
-            // Test double-click 2-way navigation from Detail table back to Compare tab (index 0)
-            emit detailTbl->cellDoubleClicked(0, 1);
-            QApplication::processEvents();
-            require(tabs->currentIndex() == 0, "Double-click should switch back to Compare tab");
+        // 2. Verify MSGF-TIR Form (3 tabs, Paper Ref removed, N5 included in Benchmark)
+        {
+            MsgfForm msgfForm;
+            verifyPageBenchmarkFlow(msgfForm, sampleDir, "MsgfForm");
         }
 
-        std::cout << "All MSGF-TIR UI, Chart & Benchmark integration tests passed!\n";
+        // 3. Verify N5 Form (3 tabs, Stage-by-Stage Ablation table, Benchmark)
+        {
+            N5Form n5Form;
+            verifyPageBenchmarkFlow(n5Form, sampleDir, "N5Form");
+            auto* ablationTbl = n5Form.findChild<QTableWidget*>(QStringLiteral("tblAblation"));
+            require(ablationTbl != nullptr && ablationTbl->rowCount() == 4,
+                    "N5Form should display 4-stage ablation table");
+        }
+
+        std::cout << "All MSGF-TIR & N5 UI, Chart & Benchmark integration tests passed!\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';

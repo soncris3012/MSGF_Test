@@ -17,6 +17,7 @@ std::string MsgfBaselines::algorithmName(BenchmarkAlgorithmId id)
     case BenchmarkAlgorithmId::GF_DDE:   return "GF&DDE";
     case BenchmarkAlgorithmId::BF_DDE:   return "BF&DDE";
     case BenchmarkAlgorithmId::MSGF_TIR: return "MSGF-TIR";
+    case BenchmarkAlgorithmId::N5:       return "N5";
     }
     return "Unknown";
 }
@@ -121,7 +122,8 @@ BaselineRunResult MsgfBaselines::runBFDDE(const cv::Mat& inputGrayOrBgr)
 BaselineRunResult MsgfBaselines::runAlgorithm(
     BenchmarkAlgorithmId id,
     const cv::Mat& inputGrayOrBgr,
-    const MsgfParams& msgfParams)
+    const MsgfParams& msgfParams,
+    const N5Params& n5Params)
 {
     switch (id) {
     case BenchmarkAlgorithmId::Original: {
@@ -136,6 +138,10 @@ BaselineRunResult MsgfBaselines::runAlgorithm(
         return runBFDDE(inputGrayOrBgr);
     case BenchmarkAlgorithmId::MSGF_TIR: {
         const MsgfOutputs out = MsgfAlgorithm::run(inputGrayOrBgr, msgfParams);
+        return {out.output8U, out.elapsedMs};
+    }
+    case BenchmarkAlgorithmId::N5: {
+        const N5Outputs out = N5Algorithm::run(inputGrayOrBgr, n5Params);
         return {out.output8U, out.elapsedMs};
     }
     }

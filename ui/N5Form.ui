@@ -1,0 +1,789 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>N5Form</class>
+ <widget class="QWidget" name="N5Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1480</width>
+    <height>880</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1024</width>
+    <height>660</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>N5: Self-Guided CLAHE + Post-Half Thermal Enhancement</string>
+  </property>
+  <layout class="QVBoxLayout" name="rootLayout">
+   <property name="spacing">
+    <number>8</number>
+   </property>
+   <property name="leftMargin">
+    <number>8</number>
+   </property>
+   <property name="topMargin">
+    <number>8</number>
+   </property>
+   <property name="rightMargin">
+    <number>8</number>
+   </property>
+   <property name="bottomMargin">
+    <number>8</number>
+   </property>
+   <item>
+    <widget class="QSplitter" name="mainSplitter">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QWidget" name="leftPanel" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>310</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>420</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="leftLayout">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGroupBox" name="grpInput">
+         <property name="title">
+          <string>Input &amp; Dataset Navigator</string>
+         </property>
+         <layout class="QVBoxLayout" name="inputLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="fileButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="btnLoadImage">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Load Image...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnOpenFolder">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Open Folder...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="datasetRootLayout">
+            <item>
+             <widget class="QComboBox" name="comboDataset">
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Select discovered dataset (Paper Samples, FLIR, LLVIP, MSRS, RoadScene)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnSetRoot">
+              <property name="maximumWidth">
+               <number>72</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Set dataset root folder (e.g. ~/QART_Datasets)</string>
+              </property>
+              <property name="text">
+               <string>Root...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="navLayout">
+            <item>
+             <widget class="QPushButton" name="btnPrev">
+              <property name="maximumWidth">
+               <number>34</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Previous image (Left Arrow)</string>
+              </property>
+              <property name="text">
+               <string>◀</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboScene">
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnNext">
+              <property name="maximumWidth">
+               <number>34</number>
+              </property>
+              <property name="minimumHeight">
+               <number>26</number>
+              </property>
+              <property name="toolTip">
+               <string>Next image (Right Arrow)</string>
+              </property>
+              <property name="text">
+               <string>▶</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="paramScroll">
+         <property name="frameShape">
+          <enum>QFrame::Shape::NoFrame</enum>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="paramScrollContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>330</width>
+            <height>480</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="paramLayout">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QCheckBox" name="chkFreezeAccepted">
+             <property name="toolTip">
+              <string>Lock accepted N5 baseline parameters (w1=7, clip=2.0, grid=8, w2=3, postHalf=0.5)</string>
+             </property>
+             <property name="text">
+              <string>Khóa tham số Accepted N5 (Baseline gốc)</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpStage1">
+             <property name="title">
+              <string>1. Stage 1 — Self-Guided Base + CLAHE</string>
+             </property>
+             <layout class="QFormLayout" name="stage1FormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblW1">
+                <property name="text">
+                 <string>Guided Window w1:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="spinW1">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>31</number>
+                </property>
+                <property name="singleStep">
+                 <number>2</number>
+                </property>
+                <property name="value">
+                 <number>7</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblClipLimit">
+                <property name="text">
+                 <string>CLAHE Clip Limit:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="spinClipLimit">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.100000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>40.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.200000000000000</double>
+                </property>
+                <property name="value">
+                 <double>2.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="lblTileGrid">
+                <property name="text">
+                 <string>CLAHE Grid (n × n):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSpinBox" name="spinTileGrid">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>64</number>
+                </property>
+                <property name="value">
+                 <number>8</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpStage2">
+             <property name="title">
+              <string>2. Stage 2 — Fine Guided Base + Post-Half</string>
+             </property>
+             <layout class="QFormLayout" name="stage2FormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblW2">
+                <property name="text">
+                 <string>Guided Window w2:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="spinW2">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>31</number>
+                </property>
+                <property name="singleStep">
+                 <number>2</number>
+                </property>
+                <property name="value">
+                 <number>3</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblPostHalf">
+                <property name="text">
+                 <string>Post-Half β (R2):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="spinPostHalf">
+                <property name="minimumHeight">
+                 <number>26</number>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.500000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="grpN5Spec">
+             <property name="title">
+              <string>Pipeline Specification</string>
+             </property>
+             <layout class="QVBoxLayout" name="specLayout">
+              <item>
+               <widget class="QLabel" name="lblN5Note">
+                <property name="text">
+                 <string>• Precision: float64 + BORDER_REFLECT_101
+• Dynamic ε = mean(local_var) per stage
+• Quantization: ties-to-even (np.rint parity)
+• Stage 1: B1 = G_w1(x), U = Q(CLAHE(B1) + R1)
+• Stage 2: B2 = G_w2(u), Y = Q(u - β·(u - B2))</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <spacer name="paramSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>10</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="grpActions">
+         <property name="title">
+          <string>Actions</string>
+         </property>
+         <layout class="QVBoxLayout" name="actionsLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="runAutoLayout">
+            <item>
+             <widget class="QPushButton" name="btnRun">
+              <property name="minimumHeight">
+               <number>30</number>
+              </property>
+              <property name="text">
+               <string>Run N5</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkAutoUpdate">
+              <property name="text">
+               <string>Auto-Update</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnReset">
+              <property name="minimumHeight">
+               <number>30</number>
+              </property>
+              <property name="text">
+               <string>Reset Accepted</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="exportLayout">
+            <item>
+             <widget class="QPushButton" name="btnSaveOutput">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Save Output...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnExportStages">
+              <property name="minimumHeight">
+               <number>28</number>
+              </property>
+              <property name="text">
+               <string>Export All Stages...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QTabWidget" name="viewerTabs">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tabCompare">
+       <attribute name="title">
+        <string>Compare (Input vs N5)</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="compareLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <item>
+         <widget class="ImageCanvas" name="canvasInput" native="true"/>
+        </item>
+        <item>
+         <widget class="ImageCanvas" name="canvasOutput" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabStages">
+       <attribute name="title">
+        <string>N5 Pipeline Stages (6 Stages)</string>
+       </attribute>
+       <layout class="QGridLayout" name="stagesGridLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="ImageCanvas" name="canvasB1" native="true"/>
+        </item>
+        <item row="0" column="1">
+         <widget class="ImageCanvas" name="canvasR1" native="true"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="ImageCanvas" name="canvasC" native="true"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="ImageCanvas" name="canvasU" native="true"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="ImageCanvas" name="canvasB2" native="true"/>
+        </item>
+        <item row="1" column="2">
+         <widget class="ImageCanvas" name="canvasR2" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabBenchmark">
+       <attribute name="title">
+        <string>Dataset Benchmark &amp; Charts</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="benchmarkTabLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="DatasetBenchmarkWidget" name="benchmarkWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="rightPanel" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>290</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>430</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="rightLayout">
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGroupBox" name="grpMetrics">
+         <property name="title">
+          <string>Quantitative Metrics (Current N5 Run)</string>
+         </property>
+         <layout class="QFormLayout" name="metricsFormLayout">
+          <property name="verticalSpacing">
+           <number>8</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="lblInfoKey">
+            <property name="text">
+             <string>Image:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="lblImageInfo">
+            <property name="text">
+             <string>—</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lblPsnrKey">
+            <property name="text">
+             <string>PSNR:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="lblPsnrVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lblIeKey">
+            <property name="text">
+             <string>IE:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="lblIeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="lblAgKey">
+            <property name="text">
+             <string>AG:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="lblAgVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="lblPiqeKey">
+            <property name="text">
+             <string>PIQE (↓ better):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLabel" name="lblPiqeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="lblRegKey">
+            <property name="text">
+             <string>Dynamic ε1 / ε2:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="lblRegVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="lblRuntimeKey">
+            <property name="text">
+             <string>Runtime:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLabel" name="lblRuntimeVal">
+            <property name="text">
+             <string>—</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="lblStatusKey">
+            <property name="text">
+             <string>Status:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLabel" name="lblStatusVal">
+            <property name="text">
+             <string>Idle</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="grpAblation">
+         <property name="title">
+          <string>Stage-by-Stage Ablation (Current Image)</string>
+         </property>
+         <layout class="QVBoxLayout" name="ablationLayout">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <widget class="QTableWidget" name="tblAblation">
+            <property name="editTriggers">
+             <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+            </property>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblBenchHint">
+            <property name="text">
+             <string>Tip: Scroll wheel zooms at cursor, drag pans, double-click resets view.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageCanvas</class>
+   <extends>QWidget</extends>
+   <header>ui/ImageCanvas.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DatasetBenchmarkWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/DatasetBenchmarkWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
